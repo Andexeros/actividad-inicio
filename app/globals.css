@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0807;
+  --foreground: #f5ede6;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-bebas), "Arial Narrow", sans-serif;
+
+  /* Paleta del muro: terracota y luz cálida */
+  --color-ladrillo-50: #fdf1ea;
+  --color-ladrillo-200: #f4c1a2;
+  --color-ladrillo-400: #e07b4c;
+  --color-ladrillo-500: #c8602f;
+  --color-ladrillo-600: #a84b22;
+  --color-ladrillo-800: #5e2913;
+  --color-luz: #ffc46b;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Fondo con brillo cálido sutil, reutilizable */
+.fondo-calido {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 110%, rgb(200 96 47 / 0.22), transparent 70%),
+    var(--background);
+}
