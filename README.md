@@ -29,6 +29,22 @@ Stack: Next.js 16 (App Router, TS) · Tailwind 4 · Supabase (Postgres + Realtim
    - `SESSION_SECRET` → cualquier string largo al azar (firma las cookies de host/admin).
 5. `npm run dev` y abrí http://localhost:3000.
 
+## Probar (etapa 2)
+
+Hasta que esté el panel del líder (etapa 3), la fase se cambia por consola:
+
+```bash
+npm run fase -- isla fase1 0    # abre la entrada, pregunta 1
+npm run fase -- isla fase1 1    # pregunta 2
+npm run fase -- isla fase2      # fase 2
+npm run fase -- isla cerrar     # cierra la entrada
+npm run fase -- isla lobby      # vuelve al inicio
+```
+
+- Celular: `http://localhost:3000/isla` · TV mínima: `http://localhost:3000/isla/tv`
+- Desde un celular en la misma red: `npm run dev -- -H 0.0.0.0` y entrá con la IP de la compu.
+- **Aislamiento entre iglesias:** `npm run probar:aislamiento` abre una conexión Realtime por iglesia, inserta respuestas en paralelo en las 3 y verifica que cada una recibe solo las suyas en menos de 1 s, que las ocultas no llegan y que la anon key no puede escribir. Al final borra las respuestas de prueba.
+
 ## Editar textos
 
 Preguntas, frase de reflexión, versículo, tamaño mínimo del muro, etc.: `config/actividad.ts`.

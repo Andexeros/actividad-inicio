@@ -6,10 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "probar:aislamiento": "node --env-file=.env.local scripts/probar-aislamiento.mjs",
+    "fase": "node --env-file=.env.local scripts/fase.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
+    "framer-motion": "^14.12.0",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
