@@ -2,27 +2,32 @@ import "server-only";
 
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
-import { getServiceSupabase } from "@/lib/supabase/server";
 
 /**
- * Autenticación por PIN con cookies firmadas (HMAC con SESSION_SECRET).
- * - Host: una cookie por iglesia. Incluye un hash corto del PIN vigente, así que
- *   cambiar el PIN de una iglesia cierra las sesiones abiertas de sus líderes.
- * - Admin: una cookie; solo mira (no controla ninguna iglesia).
+ * Login del admin (/admin) por PIN, con una cookie firmada (HMAC).
+ * La cookie incluye un hash corto del PIN vigente: si se cambia ADMIN_PIN, se cierra la sesión.
  */
 
 const DURACION_S = 60 * 60 * 12; // 12 h
 const COOKIE_ADMIN = "elmuro_admin";
-const cookieHost = (iglesiaId: string) => `elmuro_host_${iglesiaId.replace(/-/g, "")}`;
 
-type Token = { r: "host" | "admin"; i?: string; p: string; e: number };
+type Token = { r: "admin"; p: string; e: number };
 
+/**
+ * Clave para firmar la cookie. Si no hay SESSION_SECRET, se deriva de un secreto de Supabase
+ * que la integración de Vercel ya carga (así alcanza con cargar solo ADMIN_PIN).
+ */
 function secreto(): string {
-  const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 16) {
-    throw new Error("Falta SESSION_SECRET (mínimo 16 caracteres) en las variables de entorno");
+  const base =
+    process.env.SESSION_SECRET ||
+    process.env.SUPABASE_JWT_SECRET ||
+    process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!base || base.length < 16) {
+    throw new Error("Falta SESSION_SECRET (o las claves de Supabase) en las variables de entorno");
   }
-  return s;
+  // Derivada: no se usa el secreto de Supabase directamente como clave
+  return createHash("sha256").update(`el-muro:cookies:${base}`).digest("base64url");
 }
 
 function firmar(datos: string): string {
@@ -53,63 +58,29 @@ function leerToken(valor: string | undefined): Token | null {
   }
 }
 
-export function pinesIguales(a: string, b: string): boolean {
+function pinesIguales(a: string, b: string): boolean {
   const ha = createHash("sha256").update(a).digest();
   const hb = createHash("sha256").update(b).digest();
   return timingSafeEqual(ha, hb);
-}
-
-/** PIN vigente del líder de una iglesia: el propio o el global HOST_PIN. */
-export async function pinDeIglesia(iglesiaId: string): Promise<string | null> {
-  const { data, error } = await getServiceSupabase()
-    .from("iglesias")
-    .select("host_pin")
-    .eq("id", iglesiaId)
-    .maybeSingle<{ host_pin: string | null }>();
-  if (error) throw new Error(error.message);
-  return data?.host_pin || process.env.HOST_PIN || null;
 }
 
 function adminPin(): string | null {
   return process.env.ADMIN_PIN || null;
 }
 
-const opcionesCookie = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
-  path: "/",
-  maxAge: DURACION_S,
-};
-
-const expiracion = () => Math.floor(Date.now() / 1000) + DURACION_S;
-
 /** Demora fija ante un PIN incorrecto (frena el "probar todos los PIN"). */
 export const esperarPorError = () => new Promise((r) => setTimeout(r, 900));
-
-export async function iniciarHost(iglesiaId: string, pin: string): Promise<boolean> {
-  const vigente = await pinDeIglesia(iglesiaId);
-  if (!vigente || !pinesIguales(pin, vigente)) return false;
-  (await cookies()).set(
-    cookieHost(iglesiaId),
-    crearToken({ r: "host", i: iglesiaId, p: huellaPin(vigente), e: expiracion() }),
-    opcionesCookie,
-  );
-  return true;
-}
-
-export async function cerrarHost(iglesiaId: string) {
-  (await cookies()).delete(cookieHost(iglesiaId));
-}
 
 export async function iniciarAdmin(pin: string): Promise<boolean> {
   const vigente = adminPin();
   if (!vigente || !pinesIguales(pin, vigente)) return false;
-  (await cookies()).set(
-    COOKIE_ADMIN,
-    crearToken({ r: "admin", p: huellaPin(vigente), e: expiracion() }),
-    opcionesCookie,
-  );
+  (await cookies()).set(COOKIE_ADMIN, crearToken({ r: "admin", p: huellaPin(vigente), e: Math.floor(Date.now() / 1000) + DURACION_S }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: DURACION_S,
+  });
   return true;
 }
 
@@ -121,15 +92,4 @@ export async function esAdmin(): Promise<boolean> {
   const token = leerToken((await cookies()).get(COOKIE_ADMIN)?.value);
   const vigente = adminPin();
   return Boolean(token && token.r === "admin" && vigente && token.p === huellaPin(vigente));
-}
-
-/**
- * ¿Puede controlar esta iglesia? Solo su líder, con el PIN vigente.
- * Cada iglesia maneja sus tiempos; el admin solo mira.
- */
-export async function puedeControlar(iglesiaId: string): Promise<boolean> {
-  const token = leerToken((await cookies()).get(cookieHost(iglesiaId))?.value);
-  if (!token || token.r !== "host" || token.i !== iglesiaId) return false;
-  const vigente = await pinDeIglesia(iglesiaId);
-  return Boolean(vigente && token.p === huellaPin(vigente));
 }

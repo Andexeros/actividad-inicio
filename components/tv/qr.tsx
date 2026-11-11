@@ -17,14 +17,15 @@ export function useOrigen(): string {
   );
 }
 
+/** Dirección que escriben los chicos en el celular: /<iglesia>/r (la TV es /<iglesia>). */
 export function urlCorta(origen: string, slug: string) {
-  return `${origen.replace(/^https?:\/\//, "").replace(/\/$/, "")}/${slug}`;
+  return `${origen.replace(/^https?:\/\//, "").replace(/\/$/, "")}/${slug}/r`;
 }
 
 export function QrIglesia({ slug, tamano, conUrl = true }: { slug: string; tamano: string; conUrl?: boolean }) {
   const origen = useOrigen();
   if (!origen) return <div style={{ width: tamano, height: tamano }} />;
-  const url = `${origen.replace(/\/$/, "")}/${slug}`;
+  const url = `${origen.replace(/\/$/, "")}/${slug}/r`;
   return (
     <div className="flex flex-col items-center gap-[0.8vw]">
       <div className="rounded-[1.2vw] bg-white p-[1vw] shadow-[0_0_4vw_rgb(255_196_107/0.25)]">

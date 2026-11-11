@@ -1,18 +1,17 @@
 "use server";
 
 /**
- * Acciones de control del líder de cada iglesia. Todas validan el PIN vía cookie antes de
- * tocar la base con service role.
+ * Control de la actividad desde la TV de cada iglesia: avanzar/retroceder y reiniciar.
+ * Sin PIN a propósito (pedido de simplicidad): cualquiera con la dirección de la TV
+ * puede avanzarla. Las respuestas siguen pasando por el filtro y el rate limit.
  */
 
-import { cerrarHost, esperarPorError, iniciarHost, puedeControlar } from "@/lib/auth";
 import { estadoDePaso, PASO_MURO, PASOS, pasoActual } from "@/lib/maquina";
 import { getServiceSupabase } from "@/lib/supabase/server";
-import type { Respuesta, Sesion } from "@/lib/types";
+import type { Sesion } from "@/lib/types";
 
 export type Resultado<T = undefined> = { ok: true; datos: T } | { ok: false; error: string };
 
-const SIN_PERMISO = "Tu sesión de líder venció. Volvé a ingresar el PIN.";
 
 function fallo(error: string): { ok: false; error: string } {
   return { ok: false, error };
@@ -29,23 +28,6 @@ async function sesionActiva(iglesiaId: string): Promise<Sesion | null> {
   return data;
 }
 
-export async function loginHost(iglesiaId: string, pin: string): Promise<Resultado> {
-  try {
-    if (!/^[0-9]{4,8}$/.test(pin) || !(await iniciarHost(iglesiaId, pin))) {
-      await esperarPorError();
-      return fallo("PIN incorrecto.");
-    }
-    return { ok: true, datos: undefined };
-  } catch (e) {
-    console.error("loginHost", e);
-    return fallo("No se pudo ingresar. Revisá la configuración del servidor.");
-  }
-}
-
-export async function logoutHost(iglesiaId: string): Promise<void> {
-  await cerrarHost(iglesiaId);
-}
-
 /**
  * Avanza (+1) o retrocede (-1) un paso de la actividad (ver PASOS en lib/maquina.ts).
  * `versionVista` evita que un doble clic (o dos pantallas a la vez) mueva dos pasos:
@@ -57,7 +39,6 @@ export async function moverPaso(
   versionVista: number,
 ): Promise<Resultado<Sesion>> {
   try {
-    if (!(await puedeControlar(iglesiaId))) return fallo(SIN_PERMISO);
     const sesion = await sesionActiva(iglesiaId);
     if (!sesion) return fallo("No hay una sesión activa.");
     if (sesion.version !== versionVista) {
@@ -103,60 +84,8 @@ export async function moverPaso(
   }
 }
 
-export type RespuestaHost = Respuesta;
-
-/** Todas las respuestas (incluidas las ocultas) de la sesión activa. */
-export async function respuestasParaControl(
-  iglesiaId: string,
-): Promise<Resultado<{ sesionId: string | null; respuestas: RespuestaHost[] }>> {
-  try {
-    if (!(await puedeControlar(iglesiaId))) return fallo(SIN_PERMISO);
-    const sesion = await sesionActiva(iglesiaId);
-    if (!sesion) return { ok: true, datos: { sesionId: null, respuestas: [] } };
-    const { data, error } = await getServiceSupabase()
-      .from("respuestas")
-      .select("id, sesion_id, iglesia_id, fase, pregunta, texto, visible, filtrada, created_at")
-      .eq("sesion_id", sesion.id)
-      .order("created_at", { ascending: false })
-      .limit(2000)
-      .returns<RespuestaHost[]>();
-    if (error) throw new Error(error.message);
-    return { ok: true, datos: { sesionId: sesion.id, respuestas: data ?? [] } };
-  } catch (e) {
-    console.error("respuestasParaControl", e);
-    return fallo("No se pudieron cargar las respuestas.");
-  }
-}
-
-export async function moderarRespuesta(
-  iglesiaId: string,
-  respuestaId: string,
-  visible: boolean,
-): Promise<Resultado> {
-  try {
-    if (!(await puedeControlar(iglesiaId))) return fallo(SIN_PERMISO);
-    const db = getServiceSupabase();
-    const { data, error } = await db
-      .from("respuestas")
-      .update({ visible })
-      .eq("id", respuestaId)
-      .eq("iglesia_id", iglesiaId)
-      .select("sesion_id")
-      .returns<{ sesion_id: string }[]>();
-    if (error) throw new Error(error.message);
-    if (!data?.length) return fallo("No se encontró la respuesta.");
-    // Avisa a la TV que vuelva a leer (Realtime no le avisa cuando una fila se oculta)
-    await db.rpc("tocar_sesion", { p_sesion: data[0].sesion_id });
-    return { ok: true, datos: undefined };
-  } catch (e) {
-    console.error("moderarRespuesta", e);
-    return fallo("No se pudo cambiar la respuesta.");
-  }
-}
-
 export async function reiniciarActividad(iglesiaId: string): Promise<Resultado<Sesion>> {
   try {
-    if (!(await puedeControlar(iglesiaId))) return fallo(SIN_PERMISO);
     const { data, error } = await getServiceSupabase().rpc("reiniciar_sesion", {
       p_iglesia: iglesiaId,
     });

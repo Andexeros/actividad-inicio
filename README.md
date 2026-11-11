@@ -1,117 +1,78 @@
 # El Muro
 
-Actividad interactiva para jóvenes sobre la **unidad entre congregaciones**. Cada iglesia tiene su TV, sus celulares y su líder; un panel admin ve todo.
+Actividad interactiva para jóvenes sobre la **unidad entre congregaciones**. Cada iglesia tiene su TV y la maneja a su ritmo; los chicos responden desde el celular; un admin mira todo.
 
 Stack: Next.js 16 (App Router, TS) · Tailwind 4 · Supabase (Postgres + Realtime) · Matter.js · Framer Motion · Howler.js · qrcode.react.
 
-## Rutas
+## Direcciones
 
-| Ruta | Quién | Qué |
+| Dirección | Quién | Qué |
 |---|---|---|
-| `/` | — | Landing con links a cada iglesia |
-| `/[iglesia]` | Chicos (celular) | Responder (URL del QR) |
-| `/[iglesia]/tv` | Pantalla grande | Muro, QR, animaciones |
-| `/[iglesia]/host` | Líder (PIN) | Control de fases y moderación |
-| `/admin` | Admin (PIN) | Las iglesias en vivo |
+| `/` | — | Lista de iglesias (lleva al celular de cada una) |
+| `/isla` | Pantalla grande | **La TV**: muro, QR, animaciones y los botones **Avanzar / Retroceder** |
+| `/isla/r` | Chicos (celular) | Responder. Es la dirección del QR |
+| `/admin` | Admin (PIN) | Mirar las iglesias en vivo, todas las respuestas, CSV |
 
-## Setup
+(Lo mismo con `central`, `alvear` o cualquier iglesia nueva. La vieja `/isla/tv` redirige a `/isla`.)
 
-1. **Node 20+** y `npm install`.
-2. **Crear un proyecto en [Supabase](https://supabase.com)** (plan free alcanza).
-3. **Correr las migraciones**, en orden, en *SQL Editor → New query* (pegar y ejecutar cada archivo):
-   - `supabase/migrations/20261110000001_esquema_inicial.sql`
-   - `supabase/migrations/20261110000002_iglesias_iniciales.sql`
-   - `supabase/migrations/20261110000003_funciones_host.sql`
+## Cómo se usa
 
-   O desde la compu, con `npm run migrar`: aplica en orden las que falten y anota cuáles corrió (tabla `_migraciones`), así que se puede correr de nuevo sin riesgo. Usa `POSTGRES_URL_NON_POOLING` de `.env.local` y verifica la conexión con el certificado de Supabase (`supabase/prod-ca-2021.crt`, indicado en `SUPABASE_CA_CERT`).
-4. **Variables de entorno:** copiá `.env.example` a `.env.local` y completá:
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` → *Project Settings → API*.
-   - `ADMIN_PIN`, `HOST_PIN` → PINs numéricos. Cada iglesia puede tener su propio PIN en `iglesias.host_pin`; si está vacío se usa `HOST_PIN`.
-   - `SESSION_SECRET` → string al azar de 16+ caracteres (firma las cookies de host/admin). Por ejemplo: `node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"`.
-5. `npm run dev` y abrí http://localhost:3000.
+1. Abrir la TV de la iglesia (`/isla`) en la notebook conectada a la tele. Tocar **Pantalla completa** y **Activar sonido** (los navegadores no dejan sonar nada hasta un clic).
+2. Los chicos escanean el QR → `/isla/r`.
+3. Avanzar con el botón **Avanzar →** (abajo; aparece al mover el mouse), con la flecha **→** o con un **puntero de presentaciones** (AvPág). Para volver: **← Retroceder**, flecha **←** o RePág.
 
-## Antes de la actividad
-
-- **`CHECKLIST.md`**: deploy en Vercel, prueba con celulares reales y lista para el día del evento.
-- **`npm run chequeo`**: revisa variables, migraciones, que cada iglesia esté en Inicio y la seguridad de la clave pública. Solo lee, no cambia nada.
-
-## Manejar la actividad: Avanzar / Retroceder
-
-Cada iglesia avanza a su ritmo. La actividad es una línea de 9 pasos:
+La actividad es una línea de 9 pasos:
 
 **Inicio → Pregunta 1 → Pregunta 2 → Pregunta 3 → Muro → Clase → Fase 2 → Derrumbe → Final**
 
 - Las preguntas y la Fase 2 reciben respuestas; el resto no (se abre y cierra solo).
-- Al **avanzar** de Pregunta 3 a Muro se construye el muro con las respuestas visibles de la fase 1 (la foto queda guardada: ocultar una respuesta después ya no lo cambia).
-- **Retroceder** deshace el último paso: de Muro a Pregunta 3 vuelve a abrir las respuestas (y al avanzar se arma el muro de nuevo); de Derrumbe a Fase 2 el muro vuelve a aparecer quieto, con los agujeros de los golpes.
-- En la Fase 2, al llegar al 100% de fuerza pasa solo a Derrumbe.
-- Si se aprieta dos veces seguidas (o desde dos pantallas a la vez) se mueve un solo paso.
+- Al avanzar de Pregunta 3 a **Muro** se construye el muro con las respuestas (la foto queda guardada).
+- **Retroceder** deshace el último paso: de Muro a Pregunta 3 se vuelve a abrir y al avanzar se arma de nuevo; de Derrumbe a Fase 2 el muro vuelve quieto, con sus agujeros.
+- En la Fase 2, cada respuesta es un proyectil que tira ladrillos; al llegar al 100% de fuerza (`fase2.respuestasParaDerribar`, 30) pasa solo a Derrumbe.
+- **↺ Reiniciar** (con confirmación): vuelve al inicio con el muro vacío. Las respuestas quedan guardadas para el admin.
+- Recargar la TV en cualquier momento recupera el estado exacto, sin repetir animaciones.
+- La pantalla no se apaga sola mientras la TV está abierta.
 
-**Desde la TV** (`/[iglesia]/tv`): abajo aparecen **← Retroceder** y **Avanzar: <paso siguiente> →** (se esconden solos sin mover el mouse). También con el teclado: **→ / ←**, o **AvPág / RePág**, que es lo que manda un **puntero de presentaciones**. La primera vez pide el PIN de la iglesia en esa TV (dura 12 h), así nadie que conozca la dirección puede avanzarla.
-
-**Desde el celular del líder** (`/[iglesia]/host`): los mismos dos botones, más la lista de respuestas en vivo para ocultar/mostrar y el reinicio. Se entra con el PIN de la iglesia (`iglesias.host_pin`, o `HOST_PIN` si no tiene); si se cambia el PIN, se cierran las sesiones abiertas. El admin solo mira.
-
-- Lista de respuestas en vivo (incluidas las que ocultó el filtro, marcadas "filtro automático") con Ocultar/Mostrar.
-- "Reiniciar actividad" (con confirmación) crea una sesión nueva en Inicio; las respuestas viejas quedan en la base.
+Cada iglesia es independiente: avanzar una no afecta a las otras. No hay PIN para avanzar (pedido de simplicidad): cualquiera que abra la dirección de la TV puede avanzarla.
 
 ## Admin (`/admin`)
 
-Se entra con `ADMIN_PIN` (sesión de 12 h). Es **solo para mirar**: no cambia fases, no oculta respuestas ni reinicia (eso lo hace el líder de cada iglesia). Pestañas:
+Se entra con `ADMIN_PIN` (12 h). Es **solo para mirar**:
 
-- **En vivo:** las iglesias lado a lado (en celular, una por vez con pestañas): fase, pregunta actual, si está recibiendo respuestas, cantidades y respuestas en vivo (las ocultas aparecen tachadas). Links a la TV y al celular de cada una.
-- **Respuestas:** todas las de las sesiones actuales, con filtros por iglesia, fase, pregunta y visibilidad, y búsqueda de texto (sin importar mayúsculas ni tildes).
-- **Exportar CSV:** desde Respuestas, todo o por iglesia (`/admin/exportar` y `/admin/exportar?iglesia=slug`). Incluye también actividades anteriores (reinicios), con la fecha de cada sesión. Separado por `;` y con BOM para que Excel en español lo abra bien.
-- **Combinado:** nube de respuestas y ranking de las palabras más repetidas juntando todas las iglesias (solo visibles), por fase.
-- **Iglesias:** crear y editar nombre, slug y PIN propio. Cambiar el slug cambia la dirección y el QR de esa iglesia. No se pueden usar slugs reservados (`admin`, `api`, `tv`, `host`).
+- **En vivo:** las iglesias lado a lado (en celular, con pestañas): paso, pregunta, si recibe respuestas, cantidades y respuestas en vivo.
+- **Respuestas:** filtros por iglesia, fase, pregunta y visibilidad, búsqueda, y **Exportar CSV** (todo o por iglesia, incluye actividades anteriores; abre bien en Excel en español).
+- **Combinado:** nube y ranking de palabras de todas las iglesias, por fase.
+- **Iglesias:** crear y editar nombre y slug (cambiar el slug cambia la dirección y el QR).
 
-## TV (`/[iglesia]/tv`)
+Las malas palabras se ocultan solas (filtro en `lib/filtro.ts`) y nunca llegan a la TV.
 
-- Pensada para 16:9 en pantalla completa. Abajo al centro: **Pantalla completa** y **Activar sonido** (los navegadores no dejan sonar audio hasta que alguien hace clic en la página; hacelo una vez al abrir la TV). Los botones y el cursor se esconden solos.
-- **Inicio:** título, iglesia, QR grande con la URL corta y cuántos celulares están conectados (Supabase Presence).
-- **Fase 1:** pregunta grande, contador animado de respuestas y QR en la esquina.
-- **Construir el muro:** los ladrillos caen de a uno (`config/actividad.ts → muro.msEntreLadrillos`, 150 ms), con su palabra, física (Matter.js) y sonido. Siempre hay al menos `muro.minimoLadrillos` (60) ladrillos y las filas se completan con ladrillos sin texto. Al terminar aparece la frase de reflexión.
-- **Recarga:** si la TV se abre o recarga con el muro ya construido, aparece completo y quieto (no se repite la animación). Solo se anima si la TV vio en vivo el paso a "Construir el muro". Si cambia el tamaño de la ventana durante la construcción, se completa al instante.
-- **Fase 2:** pregunta arriba, QR en la esquina y barra de **fuerza** (respuestas visibles de fase 2 ÷ `fase2.respuestasParaDerribar`, 30 por defecto). Cada respuesta nueva es un proyectil dorado con la palabra que viene "desde el público", pega en el muro y tira 1 o 2 ladrillos con física (caen delante del muro y quedan como escombros). Si llegan muchas juntas se encolan y se lanzan seguido.
-- **Qué ladrillos caen** es determinístico (`lib/muro/golpes.ts`): el golpe N siempre tira los mismos, solo de los que no tienen nada encima (nunca quedan ladrillos flotando), con preferencia por el centro. Al recargar en fase 2, los golpes que ya pasaron aparecen como escombros quietos, sin volver a lanzar proyectiles.
-- **Derrumbe:** al llegar al 100% el servidor pasa solo a "derrumbe" (o el líder aprieta *Derribar*). Todos los ladrillos salen despedidos hacia afuera, sacudida de cámara, destello y sonido fuerte; aparece la luz cálida y, a los ~2 s, el versículo (`fase2.versiculo`). Si la TV se abre ya derrumbada, se ven los escombros quietos y el versículo directo.
-- **Final:** nube de palabras de la fase 2 (respuestas iguales se agrupan sin importar mayúsculas, tildes ni signos). Las respuestas ocultas por el líder no aparecen.
-- Rendimiento medido: 21 golpes seguidos sobre 68 ladrillos, 0,2 ms promedio por cuadro; derrumbe de 162 ladrillos, 0,85 ms promedio y 8,4 ms el peor cuadro (el límite para 60 fps es 16,7 ms).
-- Rendimiento medido: 168 ladrillos, 0,14 ms promedio por cuadro (física + dibujo); cada ladrillo se dibuja una sola vez como imagen.
-- Sonidos: `public/sounds/*.wav`, generados por síntesis propia con `npm run sonidos` (sin licencias de terceros).
-- `NEXT_PUBLIC_SITE_URL`: la URL que va en el QR (en producción, `https://actividadbiblica.vercel.app`).
+## Setup
 
-## Probar sin panel (consola)
+1. `npm install` (Node 20+).
+2. Proyecto en Supabase (en Vercel: integración Supabase, región São Paulo).
+3. Migraciones: `npm run migrar` (usa `POSTGRES_URL_NON_POOLING` de `.env.local` y verifica la conexión con `supabase/prod-ca-2021.crt`), o pegar en orden los 3 archivos de `supabase/migrations/` en el SQL Editor.
+4. `.env.local` (ver `.env.example`): las claves de Supabase y `ADMIN_PIN`.
+5. `npm run dev` → http://localhost:3000
 
-También se puede cambiar la fase por consola:
+### Variables en Vercel
 
-```bash
-npm run fase -- isla fase1 0    # abre la entrada, pregunta 1
-npm run fase -- isla fase1 1    # pregunta 2
-npm run fase -- isla fase2      # fase 2
-npm run fase -- isla cerrar     # cierra la entrada
-npm run fase -- isla lobby      # vuelve al inicio
-```
+La integración de Supabase ya carga las claves. **Solo falta `ADMIN_PIN`** (4 a 8 números). Opcionales: `SESSION_SECRET` (si no está, se deriva de una clave de Supabase) y `NEXT_PUBLIC_SITE_URL` (si no está, el QR usa la dirección de la página). El servidor corre en São Paulo (`vercel.json`), igual que la base.
 
-- Celular: `http://localhost:3000/isla` · TV mínima: `http://localhost:3000/isla/tv`
-- Desde un celular en la misma red: `npm run dev -- -H 0.0.0.0` y entrá con la IP de la compu.
-- **Aislamiento entre iglesias:** `npm run probar:aislamiento` abre una conexión Realtime por iglesia, inserta respuestas en paralelo en las 3 y verifica que cada una recibe solo las suyas en menos de 1 s, que las ocultas no llegan y que la anon key no puede escribir. Al final borra las respuestas de prueba.
+## Comandos
+
+- `npm run chequeo` — revisa variables, migraciones, que cada iglesia esté en Inicio y la seguridad. Solo lee.
+- `npm run fase -- isla lobby` — pone una iglesia en Inicio desde la consola (también `fase1 0..2`, `fase2`, `cerrar`).
+- `npm run probar:aislamiento` — prueba que cada iglesia recibe solo sus respuestas por Realtime en < 1 s.
+- `npm run sonidos` — regenera `public/sounds/*.wav` (síntesis propia, sin licencias).
 
 ## Editar textos
 
-Preguntas, frase de reflexión, versículo, tamaño mínimo del muro, etc.: `config/actividad.ts`.
+Preguntas, frase de reflexión, versículo, mínimo de ladrillos, respuestas para derribar: `config/actividad.ts`. Los 9 pasos asumen 3 preguntas en la fase 1.
 
-## Modelo de datos
+## Detalles técnicos
 
-- **iglesias** — `slug`, `nombre`, `host_pin` (el PIN no es legible con la anon key). Al crear una iglesia, un trigger le crea su sesión.
-- **sesiones** — una activa por iglesia (índice único parcial). Guarda `fase`, `pregunta_actual`, `entrada_abierta`, la foto del `muro` al construirlo un `version` que se incrementa en cada cambio de fase (si dos líderes aprietan a la vez, el segundo se rechaza) y un `rev_respuestas` que avisa a las pantallas que relean respuestas (moderación y filtradas, que Realtime no avisa). "Reiniciar" desactiva la sesión y crea otra; las respuestas viejas quedan.
-- **respuestas** — `fase`, `pregunta`, `texto` (1–25 caracteres, sin espacios al borde), `visible`, `filtrada` (oculta por el filtro automático), `dispositivo` (hash anónimo para el rate limit). `iglesia_id` lo completa un trigger desde la sesión.
+- **Datos:** `iglesias` (slug, nombre), `sesiones` (una activa por iglesia: fase, pregunta, entrada, foto del muro, `version` contra dobles clics, `rev_respuestas` para refrescar) y `respuestas` (texto ≤ 25, visible, filtrada, hash anónimo del celular para limitar a 10 por pregunta).
+- **Seguridad:** la anon key solo lee (sesiones, iglesias y respuestas visibles). Todas las escrituras pasan por el servidor.
+- **Muro:** layout determinístico; los ladrillos se dibujan una vez como imagen. Medido: 168 ladrillos a 0,14 ms por cuadro; derrumbe de 162 ladrillos a 0,85 ms promedio (límite para 60 fps: 16,7 ms). Los golpes de la fase 2 tiran siempre los mismos ladrillos (`lib/muro/golpes.ts`), así la TV se reconstruye igual al recargar.
 
-### Seguridad
-
-- La **anon key solo lee**: iglesias (sin PIN), sesiones y respuestas visibles.
-- **Todas las escrituras van por el servidor** con service role: enviar respuesta (con filtro de malas palabras y rate limit), cambiar fase, moderar, reiniciar. Los cambios de host/admin validan el PIN.
-- Realtime: `sesiones` y `respuestas` están en la publicación `supabase_realtime`; los clientes se suscriben filtrando por `iglesia_id`.
-
-## Deploy (Vercel)
-
-Importar el repo en Vercel, cargar las mismas variables de entorno y deployar. Dominio: `actividadbiblica.vercel.app`.
+Ver también **`CHECKLIST.md`** (deploy y día del evento).

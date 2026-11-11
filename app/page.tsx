@@ -23,7 +23,7 @@ async function ListaIglesias() {
       {iglesias.map((iglesia) => (
         <li key={iglesia.id}>
           <Link
-            href={`/${iglesia.slug}`}
+            href={`/${iglesia.slug}/r`}
             className="block rounded-2xl bg-ladrillo-500 px-6 py-5 text-center font-display text-4xl tracking-wide text-ladrillo-50 shadow-[inset_0_-6px_0_var(--color-ladrillo-800)] transition-transform active:translate-y-0.5 hover:bg-ladrillo-400"
           >
             {iglesia.nombre}

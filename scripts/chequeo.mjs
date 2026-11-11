@@ -25,15 +25,16 @@ const servicio = env("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY");
 si(process.env.NEXT_PUBLIC_SUPABASE_URL, "NEXT_PUBLIC_SUPABASE_URL", "falta NEXT_PUBLIC_SUPABASE_URL (la necesita el navegador)");
 si(publica, "clave pública para el navegador", "falta NEXT_PUBLIC_SUPABASE_ANON_KEY (o ..._PUBLISHABLE_KEY)");
 si(servicio, "clave de servicio", "falta SUPABASE_SERVICE_ROLE_KEY (o SUPABASE_SECRET_KEY)");
-for (const n of ["ADMIN_PIN", "HOST_PIN"]) {
-  const v = process.env[n];
-  if (!v) mal(`falta ${n}`);
-  else if (!/^[0-9]{4,8}$/.test(v)) mal(`${n} debe tener entre 4 y 8 números`);
-  else ok(n);
+{
+  const v = process.env.ADMIN_PIN;
+  if (!v) mal("falta ADMIN_PIN (para entrar a /admin)");
+  else if (!/^[0-9]{4,8}$/.test(v)) mal("ADMIN_PIN debe tener entre 4 y 8 números");
+  else ok("ADMIN_PIN");
 }
 const secreto = process.env.SESSION_SECRET;
-si(secreto && secreto.length >= 16, "SESSION_SECRET", "SESSION_SECRET falta o tiene menos de 16 caracteres");
-si(process.env.NEXT_PUBLIC_SITE_URL, `NEXT_PUBLIC_SITE_URL = ${process.env.NEXT_PUBLIC_SITE_URL} (es la dirección del QR)`, "NEXT_PUBLIC_SITE_URL vacía: el QR usa la dirección de la página (bien en local; en Vercel conviene ponerla)", true);
+if (secreto && secreto.length < 16) mal("SESSION_SECRET es muy corto (16+ caracteres) o borralo para usar el automático");
+else ok(secreto ? "SESSION_SECRET" : "secreto de sesión automático (derivado de Supabase)");
+si(process.env.NEXT_PUBLIC_SITE_URL, `NEXT_PUBLIC_SITE_URL = ${process.env.NEXT_PUBLIC_SITE_URL} (dirección del QR)`, "NEXT_PUBLIC_SITE_URL vacía: el QR usa la dirección de la página (está bien)", true);
 
 if (url && servicio && publica) {
   const o = { auth: { persistSession: false } };
@@ -59,10 +60,9 @@ if (url && servicio && publica) {
     const cuenta = await db.from("respuestas").select("sesion_id, sesiones!inner(activa)", { count: "exact", head: true }).eq("sesiones.activa", true);
     for (const i of ig.data) {
       const s = ses.data?.find((x) => x.iglesia_id === i.id);
-      const pin = i.host_pin ? "PIN propio" : "PIN general";
       if (!s) mal(`${i.nombre} (/${i.slug}): sin sesión activa`);
-      else if (s.fase !== "lobby") aviso(`${i.nombre} (/${i.slug}): está en "${s.fase}", no en Inicio. Si es otra actividad, reiniciala desde el panel.`);
-      else ok(`${i.nombre} (/${i.slug}): lista en Inicio · ${pin}`);
+      else if (s.fase !== "lobby") aviso(`${i.nombre} (/${i.slug}): está en "${s.fase}", no en Inicio. Si es otra actividad, reiniciala desde su TV.`);
+      else ok(`${i.nombre}: lista en Inicio · TV /${i.slug} · celular /${i.slug}/r`);
     }
     if (!cuenta.error && cuenta.count) aviso(`hay ${cuenta.count} respuestas en las sesiones actuales`);
   }

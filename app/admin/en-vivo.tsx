@@ -19,7 +19,7 @@ export function EnVivo({ datos }: { datos: DatosAdmin }) {
   return (
     <>
       <p className="mb-4 text-sm text-foreground/50">
-        Vista de solo lectura. Cada líder avanza su iglesia desde <code>/iglesia/host</code>.
+        Vista de solo lectura. Cada iglesia avanza desde su TV (<code>/iglesia</code>).
       </p>
       {/* Selector solo en pantallas chicas */}
       <div className="mb-4 flex gap-1 overflow-x-auto lg:hidden">
@@ -74,10 +74,10 @@ function Columna({
       <header className="flex items-start justify-between gap-2">
         <h2 className="font-display text-3xl tracking-wide text-ladrillo-400">{iglesia.nombre}</h2>
         <div className="flex gap-1 text-xs">
-          <a href={`/${iglesia.slug}/tv`} target="_blank" rel="noreferrer" className="rounded-md border border-foreground/20 px-2 py-1 hover:bg-foreground/10">
+          <a href={`/${iglesia.slug}`} target="_blank" rel="noreferrer" className="rounded-md border border-foreground/20 px-2 py-1 hover:bg-foreground/10">
             TV ↗
           </a>
-          <a href={`/${iglesia.slug}`} target="_blank" rel="noreferrer" className="rounded-md border border-foreground/20 px-2 py-1 hover:bg-foreground/10">
+          <a href={`/${iglesia.slug}/r`} target="_blank" rel="noreferrer" className="rounded-md border border-foreground/20 px-2 py-1 hover:bg-foreground/10">
             Celular ↗
           </a>
         </div>

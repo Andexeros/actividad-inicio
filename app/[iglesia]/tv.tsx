@@ -22,18 +22,9 @@ const FASES_CON_MURO: Fase[] = ["fase1_muro", "entre_fases", "fase2", "derrumbe"
 const ease = [0.22, 1, 0.36, 1] as const;
 
 /** TV conectada a Supabase (sesión, respuestas y presencia en vivo) y con el control de la actividad. */
-export function Tv({
-  iglesia,
-  sesionInicial,
-  autorizado,
-}: {
-  iglesia: Iglesia;
-  sesionInicial: Sesion | null;
-  /** ¿Esta TV ya ingresó el PIN de la iglesia? */
-  autorizado: boolean;
-}) {
+export function Tv({ iglesia, sesionInicial }: { iglesia: Iglesia; sesionInicial: Sesion | null }) {
   const { sesion, setSesion, conexion } = useSesionActiva(iglesia.id, sesionInicial);
-  const control = useControlTv({ iglesia, sesion, onSesion: setSesion, autorizado });
+  const control = useControlTv({ iglesia, sesion, onSesion: setSesion });
   const { respuestas, cargadas } = useRespuestas(iglesia.id, sesion?.id ?? null, sesion?.rev_respuestas ?? 0);
   const conectados = usePresencia(iglesia.id);
   return (
@@ -56,7 +47,7 @@ type VistaProps = {
   cargadas: boolean;
   conectados: number;
   conexion: EstadoConexion;
-  /** Botones para avanzar la actividad (barra) y capas (PIN, avisos). */
+  /** Botones para avanzar la actividad (barra) y avisos (capas). */
   control?: { barra: React.ReactNode; capas: React.ReactNode };
 };
 
