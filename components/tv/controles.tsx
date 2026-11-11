@@ -88,27 +88,27 @@ export function ControlesTv({ children }: { children?: React.ReactNode }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2"
+          // Arriba al centro, en una sola fila: abajo tapaba el muro
+          className="fixed left-1/2 top-2 z-50 flex max-w-[96vw] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5"
         >
           {children}
-          <div className="flex gap-2">
           <button
             type="button"
             onClick={() => void alternarPantalla()}
-            className="rounded-xl bg-black/60 px-4 py-2 text-sm text-foreground/80 backdrop-blur hover:bg-black/80"
+            title={pantallaCompleta ? "Salir de pantalla completa" : "Pantalla completa"}
+            className="rounded-lg bg-black/70 px-3 py-1.5 text-xs text-foreground/80 backdrop-blur hover:bg-black/90"
           >
-            {pantallaCompleta ? "Salir de pantalla completa" : "⛶ Pantalla completa"}
+            {pantallaCompleta ? "⛶ Salir" : "⛶ Pantalla completa"}
           </button>
           <button
             type="button"
             onClick={() => void activarSonido(!sonido)}
-            className={`rounded-xl px-4 py-2 text-sm backdrop-blur ${
-              sonido ? "bg-black/60 text-foreground/80 hover:bg-black/80" : "animate-pulse bg-ladrillo-500 text-ladrillo-50"
+            className={`rounded-lg px-3 py-1.5 text-xs backdrop-blur ${
+              sonido ? "bg-black/70 text-foreground/80 hover:bg-black/90" : "animate-pulse bg-ladrillo-500 text-ladrillo-50"
             }`}
           >
-            {sonido ? "🔊 Sonido" : "🔇 Activar sonido"}
+            {sonido ? "🔊" : "🔇 Activar sonido"}
           </button>
-          </div>
         </motion.div>
       )}
     </AnimatePresence>

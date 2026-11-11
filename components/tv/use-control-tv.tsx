@@ -80,21 +80,21 @@ export function useControlTv({
   }, []);
 
   const botonChico =
-    "rounded-xl bg-black/60 px-4 py-3 text-sm text-foreground/80 backdrop-blur hover:bg-black/80 disabled:opacity-40";
+    "rounded-lg bg-black/70 px-3 py-1.5 text-xs text-foreground/80 backdrop-blur hover:bg-black/90 disabled:opacity-40";
 
   const barra = !sesion ? null : (
-    <div className="flex flex-wrap items-center justify-center gap-2">
+    <div className="flex items-center gap-1.5">
       <button type="button" onClick={() => mover(-1)} disabled={pendiente || paso === 0} className={botonChico}>
         ← Retroceder
       </button>
-      <span className="rounded-xl bg-black/60 px-3 py-3 text-xs tabular-nums text-foreground/60 backdrop-blur">
+      <span className="rounded-lg bg-black/70 px-2.5 py-1.5 text-xs tabular-nums text-foreground/60 backdrop-blur">
         {PASOS[paso]} · {paso + 1}/{PASOS.length}
       </span>
       <button
         type="button"
         onClick={() => mover(1)}
         disabled={pendiente || !siguiente}
-        className="rounded-xl bg-ladrillo-500 px-6 py-3 font-display text-2xl tracking-wider text-ladrillo-50 shadow-[inset_0_-4px_0_var(--color-ladrillo-800)] hover:bg-ladrillo-400 disabled:opacity-50"
+        className="rounded-lg bg-ladrillo-500 px-4 py-1 font-display text-xl tracking-wider text-ladrillo-50 shadow-[inset_0_-3px_0_var(--color-ladrillo-800)] hover:bg-ladrillo-400 disabled:opacity-50"
       >
         {pendiente ? "…" : siguiente ? `Avanzar: ${siguiente} →` : "Fin"}
       </button>
@@ -103,7 +103,7 @@ export function useControlTv({
           type="button"
           onClick={reiniciar}
           disabled={pendiente}
-          className="rounded-xl bg-red-700 px-4 py-3 text-sm font-semibold text-white hover:bg-red-600"
+          className="rounded-lg bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600"
         >
           ¿Empezar de cero? Sí
         </button>
@@ -129,7 +129,7 @@ export function useControlTv({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0 }}
           role="alert"
-          className="fixed left-1/2 top-4 z-[70] max-w-[80vw] -translate-x-1/2 rounded-xl bg-ladrillo-800/95 px-5 py-3 text-ladrillo-50 shadow-lg"
+          className="fixed left-1/2 top-14 z-[70] max-w-[80vw] -translate-x-1/2 rounded-xl bg-ladrillo-800/95 px-5 py-3 text-ladrillo-50 shadow-lg"
         >
           {aviso}
         </motion.p>
