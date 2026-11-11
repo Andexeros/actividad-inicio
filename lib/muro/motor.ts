@@ -165,8 +165,9 @@ export class MotorMuro {
 
   // ───────────────────────── golpes (fase 2) ─────────────────────────
 
+  /** Golpes recibidos: ya lanzados (en vuelo o impactados) + los que esperan en la cola. */
   get cantidadGolpes() {
-    return this.golpesAplicados + this.colaGolpes.length + this.proyectiles.filter((p) => !p.body).length;
+    return this.golpesAplicados + this.colaGolpes.length;
   }
 
   /**

@@ -53,12 +53,15 @@ export function MuroCanvas({ claveMuro, textos, animar, onListo, golpes, derrumb
     let cancelado = false;
     let primera = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    /** Tamaño con el que se armó el muro actual (para ignorar avisos sin cambio real). */
+    let armadoCon = { ancho: 0, alto: 0 };
 
     async function armar() {
       if (!div || !cv) return;
       const ancho = div.clientWidth;
       const alto = div.clientHeight;
       if (ancho < 50 || alto < 50) return;
+      armadoCon = { ancho, alto };
       const familia = familiaDisplay();
       try {
         await document.fonts.load(`40px ${familia}`);
@@ -121,10 +124,14 @@ export function MuroCanvas({ claveMuro, textos, animar, onListo, golpes, derrumb
     }
 
     void armar();
+    // ResizeObserver avisa siempre una vez al empezar: solo rearmamos si el tamaño cambió de verdad
     const ro = new ResizeObserver(() => {
-      if (primera) return;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(() => void armar(), 200);
+      timer = setTimeout(() => {
+        if (primera) return;
+        if (Math.abs(div.clientWidth - armadoCon.ancho) < 2 && Math.abs(div.clientHeight - armadoCon.alto) < 2) return;
+        void armar();
+      }, 200);
     });
     ro.observe(div);
     return () => {

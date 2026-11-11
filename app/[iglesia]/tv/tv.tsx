@@ -9,8 +9,8 @@ import { ControlesTv } from "@/components/tv/controles";
 import { QrIglesia } from "@/components/tv/qr";
 import { entradaActual } from "@/lib/fases";
 import { usePresencia } from "@/lib/presencia";
-import { useRespuestas, useSesionActiva } from "@/lib/realtime";
-import type { Fase, Iglesia, Sesion } from "@/lib/types";
+import { useRespuestas, useSesionActiva, type EstadoConexion } from "@/lib/realtime";
+import type { Fase, Iglesia, Respuesta, Sesion } from "@/lib/types";
 
 // Matter.js y el canvas solo en el navegador
 const MuroCanvas = dynamic(() => import("@/components/tv/muro-canvas").then((m) => m.MuroCanvas), {
@@ -20,11 +20,34 @@ const MuroCanvas = dynamic(() => import("@/components/tv/muro-canvas").then((m) 
 const FASES_CON_MURO: Fase[] = ["fase1_muro", "entre_fases", "fase2", "derrumbe", "final"];
 const ease = [0.22, 1, 0.36, 1] as const;
 
+/** TV conectada a Supabase (sesión, respuestas y presencia en vivo). */
 export function Tv({ iglesia, sesionInicial }: { iglesia: Iglesia; sesionInicial: Sesion | null }) {
   const { sesion, conexion } = useSesionActiva(iglesia.id, sesionInicial);
   const { respuestas, cargadas } = useRespuestas(iglesia.id, sesion?.id ?? null, sesion?.rev_respuestas ?? 0);
   const conectados = usePresencia(iglesia.id);
+  return (
+    <TvVista
+      iglesia={iglesia}
+      sesion={sesion}
+      respuestas={respuestas}
+      cargadas={cargadas}
+      conectados={conectados}
+      conexion={conexion}
+    />
+  );
+}
 
+type VistaProps = {
+  iglesia: Iglesia;
+  sesion: Sesion | null;
+  respuestas: Respuesta[];
+  cargadas: boolean;
+  conectados: number;
+  conexion: EstadoConexion;
+};
+
+/** Lo que se ve en la TV, a partir del estado. No sabe de dónde vienen los datos. */
+export function TvVista({ iglesia, sesion, respuestas, cargadas, conectados, conexion }: VistaProps) {
   // ¿Vimos EN VIVO el paso a "muro construido"? Solo ahí se anima.
   // Si la TV se abre/recarga con el muro ya construido, aparece quieto.
   const [faseVista, setFaseVista] = useState(sesion?.fase);
