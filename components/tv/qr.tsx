@@ -38,7 +38,11 @@ export function QrIglesia({ slug, tamano, conUrl = true }: { slug: string; taman
         />
       </div>
       {conUrl && (
-        <p className="font-semibold tracking-wide text-foreground" style={{ fontSize: `calc(${tamano} * 0.09)` }}>
+        // En una sola línea: la letra se achica si la dirección es larga, para que entre en el ancho del QR
+        <p
+          className="whitespace-nowrap font-semibold tracking-wide text-foreground"
+          style={{ fontSize: `calc(${tamano} * ${Math.min(0.09, 1.9 / urlCorta(origen, slug).length).toFixed(4)})` }}
+        >
           {urlCorta(origen, slug)}
         </p>
       )}

@@ -43,8 +43,16 @@ export function useControlTv({
     return () => clearTimeout(t);
   }, [aviso]);
 
+  /** Paso pedido antes de poner el PIN: se hace apenas se valida el PIN. */
+  const pedidoAntesDelPin = useRef<1 | -1 | null>(null);
+
   function mover(direccion: 1 | -1) {
     if (!sesion || pendiente) return;
+    if (!autorizado) {
+      pedidoAntesDelPin.current = direccion;
+      setPidiendoPin(true);
+      return;
+    }
     startTransition(async () => {
       const r = await moverPaso(iglesia.id, direccion, sesion.version);
       if (r.ok) onSesion(r.datos);
@@ -56,36 +64,24 @@ export function useControlTv({
   }
 
   // Teclado / puntero de presentaciones
-  const ultimo = useRef({ mover, autorizado, pidiendoPin });
+  const ultimo = useRef({ mover, pidiendoPin });
   useEffect(() => {
-    ultimo.current = { mover, autorizado, pidiendoPin };
+    ultimo.current = { mover, pidiendoPin };
   });
   useEffect(() => {
     function alTeclear(e: KeyboardEvent) {
       const direccion = TECLAS_AVANZAR.has(e.key) ? 1 : TECLAS_RETROCEDER.has(e.key) ? -1 : 0;
       if (!direccion || e.repeat) return;
-      const { mover: hacer, autorizado: ok, pidiendoPin: pin } = ultimo.current;
+      const { mover: hacer, pidiendoPin: pin } = ultimo.current;
       if (pin || (e.target as HTMLElement)?.tagName === "INPUT") return;
       e.preventDefault();
-      if (!ok) {
-        setPidiendoPin(true);
-        return;
-      }
-      hacer(direccion);
+      hacer(direccion); // sin PIN todavía, lo pide y después hace el paso
     }
     window.addEventListener("keydown", alTeclear);
     return () => window.removeEventListener("keydown", alTeclear);
   }, []);
 
-  const barra = !sesion ? null : !autorizado ? (
-    <button
-      type="button"
-      onClick={() => setPidiendoPin(true)}
-      className="rounded-xl bg-black/60 px-4 py-2 text-sm text-foreground/80 backdrop-blur hover:bg-black/80"
-    >
-      🔒 Manejar la actividad desde esta TV
-    </button>
-  ) : (
+  const barra = !sesion ? null : (
     <div className="flex flex-wrap items-center justify-center gap-2">
       <button
         type="button"
@@ -106,6 +102,7 @@ export function useControlTv({
       >
         {pendiente ? "…" : siguiente ? `Avanzar: ${siguiente} →` : "Fin"}
       </button>
+      {autorizado ? (
       <a
         href={`/${iglesia.slug}/host`}
         target="_blank"
@@ -115,6 +112,9 @@ export function useControlTv({
       >
         Panel ↗
       </a>
+      ) : (
+        <span className="rounded-xl bg-black/60 px-3 py-3 text-xs text-foreground/50 backdrop-blur">🔒 pide PIN</span>
+      )}
     </div>
   );
 
@@ -136,11 +136,21 @@ export function useControlTv({
       {pidiendoPin && (
         <PedirPin
           nombre={iglesia.nombre}
-          onCancelar={() => setPidiendoPin(false)}
+          onCancelar={() => {
+            pedidoAntesDelPin.current = null;
+            setPidiendoPin(false);
+          }}
           onPin={async (pin) => {
             const r = await loginHost(iglesia.id, pin);
             if (!r.ok) return r.error;
             setPidiendoPin(false);
+            const dir = pedidoAntesDelPin.current;
+            pedidoAntesDelPin.current = null;
+            if (dir && sesion) {
+              const m = await moverPaso(iglesia.id, dir, sesion.version);
+              if (m.ok) onSesion(m.datos);
+              else setAviso(m.error);
+            }
             router.refresh();
             return null;
           }}
