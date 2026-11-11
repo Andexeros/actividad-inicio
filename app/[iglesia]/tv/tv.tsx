@@ -12,7 +12,7 @@ import type { Iglesia, Sesion } from "@/lib/types";
  */
 export function Tv({ iglesia, sesionInicial }: { iglesia: Iglesia; sesionInicial: Sesion | null }) {
   const { sesion, conexion } = useSesionActiva(iglesia.id, sesionInicial);
-  const { respuestas } = useRespuestas(iglesia.id, sesion?.id ?? null, sesion?.version ?? 0);
+  const { respuestas } = useRespuestas(iglesia.id, sesion?.id ?? null, sesion?.rev_respuestas ?? 0);
   const entrada = sesion ? entradaActual(sesion) : null;
   const delaPregunta = entrada
     ? respuestas.filter((r) => r.fase === entrada.fase && r.pregunta === entrada.pregunta)

@@ -114,6 +114,9 @@ async function procesarEnvio(envio: Envio): Promise<ResultadoEnvio> {
     return { ok: false, motivo: "error", mensaje: "No pudimos enviar. Probá de nuevo." };
   }
 
+  // Las filtradas no llegan por Realtime (la anon key no las ve): avisamos al panel del líder
+  if (filtrada) await db.rpc("tocar_sesion", { p_sesion: sesion.id });
+
   // Aunque se haya filtrado, respondemos OK: no le damos pistas a quien prueba el filtro.
   return { ok: true, restantes: maxPorPregunta - enviadas - 1 };
 }

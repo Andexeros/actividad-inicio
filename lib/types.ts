@@ -30,8 +30,10 @@ export type Sesion = {
   /** Foto de las respuestas visibles de fase 1 al momento de construir el muro. */
   muro: LadrilloMuro[] | null;
   muro_construido_at: string | null;
-  /** Se incrementa en cada cambio (fase, moderación) para que los clientes refresquen. */
+  /** Se incrementa en cada cambio de fase/pregunta (evita dobles clics entre líderes). */
   version: number;
+  /** Se incrementa cuando cambian respuestas que Realtime no avisa (moderación, filtradas). */
+  rev_respuestas: number;
   created_at: string;
   updated_at: string;
 };

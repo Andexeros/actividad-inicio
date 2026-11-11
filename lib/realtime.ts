@@ -5,7 +5,7 @@ import { getBrowserSupabase } from "@/lib/supabase/browser";
 import type { Respuesta, Sesion } from "@/lib/types";
 
 const COLUMNAS_SESION =
-  "id, iglesia_id, fase, pregunta_actual, entrada_abierta, activa, muro, muro_construido_at, version, created_at, updated_at";
+  "id, iglesia_id, fase, pregunta_actual, entrada_abierta, activa, muro, muro_construido_at, version, rev_respuestas, created_at, updated_at";
 const COLUMNAS_RESPUESTA = "id, sesion_id, iglesia_id, fase, pregunta, texto, visible, filtrada, created_at";
 
 function idCanal(prefijo: string) {
@@ -73,14 +73,14 @@ export function useSesionActiva(iglesiaId: string, inicial: Sesion | null) {
     };
   }, [iglesiaId, recargar]);
 
-  return { sesion, conexion, recargar };
+  return { sesion, setSesion, conexion, recargar };
 }
 
 /**
  * Respuestas visibles de una sesión, en vivo (orden de llegada).
- * Se recargan completas cuando cambia `version` de la sesión (moderación, etc.).
+ * Se recargan completas cuando cambia `rev` (rev_respuestas de la sesión: moderación, etc.).
  */
-export function useRespuestas(iglesiaId: string, sesionId: string | null, version: number) {
+export function useRespuestas(iglesiaId: string, sesionId: string | null, rev: number) {
   const [respuestas, setRespuestas] = useState<Respuesta[]>([]);
   const sesionRef = useRef(sesionId);
   useEffect(() => {
@@ -99,10 +99,10 @@ export function useRespuestas(iglesiaId: string, sesionId: string | null, versio
     if (!error && sesionRef.current === sesionId) setRespuestas(data ?? []);
   }, [sesionId]);
 
-  // Carga inicial y cada vez que cambia la versión de la sesión
+  // Carga inicial y cada vez que cambia rev
   useEffect(() => {
     void recargar();
-  }, [recargar, version]);
+  }, [recargar, rev]);
 
   useEffect(() => {
     if (!sesionId) return;
