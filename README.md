@@ -37,10 +37,11 @@ Cada iglesia es independiente: avanzar una no afecta a las otras. No hay PIN par
 
 ## Admin (`/admin`)
 
-Se entra con `ADMIN_PIN` (12 h). Es **solo para mirar**:
+Se entra con el PIN de admin (12 h): `ADMIN_PIN` si está cargado en Vercel, o **1234** por defecto (conviene cambiarlo cargando `ADMIN_PIN`). Mira las iglesias, no las maneja:
 
 - **En vivo:** las iglesias lado a lado (en celular, con pestañas): paso, pregunta, si recibe respuestas, cantidades y respuestas en vivo.
 - **Respuestas:** filtros por iglesia, fase, pregunta y visibilidad, búsqueda, y **Exportar CSV** (todo o por iglesia, incluye actividades anteriores; abre bien en Excel en español).
+- **Borrar:** 🗑 en cada respuesta (pide confirmar), y **Empezar de cero** al final de Respuestas: borra para siempre todas las respuestas de una iglesia o de todas y deja la TV en Inicio con el muro vacío (hay que escribir BORRAR).
 - **Combinado:** nube y ranking de palabras de todas las iglesias, por fase.
 - **Iglesias:** crear y editar nombre y slug (cambiar el slug cambia la dirección y el QR).
 
@@ -56,7 +57,7 @@ Las malas palabras se ocultan solas (filtro en `lib/filtro.ts`) y nunca llegan a
 
 ### Variables en Vercel
 
-La integración de Supabase ya carga las claves. **Solo falta `ADMIN_PIN`** (4 a 8 números). Opcionales: `SESSION_SECRET` (si no está, se deriva de una clave de Supabase) y `NEXT_PUBLIC_SITE_URL` (si no está, el QR usa la dirección de la página). El servidor corre en São Paulo (`vercel.json`), igual que la base.
+La integración de Supabase ya carga las claves. `ADMIN_PIN` es opcional: si no está, el PIN de admin es **1234**. Opcionales: `SESSION_SECRET` (si no está, se deriva de una clave de Supabase) y `NEXT_PUBLIC_SITE_URL` (si no está, el QR usa la dirección de la página). El servidor corre en São Paulo (`vercel.json`), igual que la base.
 
 ## Comandos
 

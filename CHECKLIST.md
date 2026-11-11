@@ -4,9 +4,8 @@
 
 - [ ] Proyecto conectado a GitHub (`Andexeros/actividad-inicio`, rama `main`): cada push se publica solo.
 - [ ] Integración **Supabase** conectada (São Paulo).
-- [ ] **Settings → Environment Variables → `ADMIN_PIN`** con tu PIN (4 a 8 números). Es la única que hay que cargar a mano.
-- [ ] **Deployments → ⋯ → Redeploy** después de cargarla.
-- [ ] Entrar a `/admin` con ese PIN.
+- [ ] Entrar a `/admin` con el PIN **1234**.
+- [ ] (Recomendado) Cambiarlo: **Settings → Environment Variables → `ADMIN_PIN`** con otro PIN de 4 a 8 números, y **Redeploy**.
 
 > Las claves de Supabase no se comparten. Si alguna quedó expuesta (por ejemplo, pegada en un chat), regenerala en Supabase y actualizá `.env.local`; la integración actualiza Vercel.
 
@@ -18,7 +17,7 @@
 - [ ] Una mala palabra no aparece en la TV.
 - [ ] Avanzar hasta Muro, recargar la TV: el muro aparece igual, sin repetir la animación.
 - [ ] Fase 2: responder y ver los proyectiles; probar Derrumbe y el versículo; **← Retroceder** y volver.
-- [ ] Al terminar: **↺ Reiniciar** en cada TV (las respuestas de prueba quedan guardadas pero no se muestran).
+- [ ] Al terminar: `/admin` → **Respuestas → Empezar de cero → Todas las iglesias** (borra las respuestas de prueba y deja todo en Inicio).
 
 ## 3. Día de la actividad (en cada iglesia)
 

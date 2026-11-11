@@ -1,28 +1,50 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { actividad } from "@/config/actividad";
-import type { DatosAdmin } from "@/lib/admin";
+import { borrarRespuestas, borrarTodoYReiniciar, type DatosAdmin } from "@/lib/admin";
 import { normalizarRespuesta } from "@/lib/nube";
 
 const selectCls =
   "rounded-lg border border-foreground/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-ladrillo-400";
 
 /**
- * Todas las respuestas de las sesiones activas, con filtros, búsqueda y exportación.
- * Solo lectura: ocultar/mostrar lo hace el líder de cada iglesia desde su panel.
+ * Todas las respuestas de las sesiones activas, con filtros, búsqueda, exportación
+ * y borrado (de a una, o todo con reinicio).
  */
-export function ListaRespuestas({ datos }: { datos: DatosAdmin }) {
+export function ListaRespuestas({ datos, onCambio }: { datos: DatosAdmin; onCambio: () => void }) {
   const [iglesia, setIglesia] = useState("todas");
   const [fase, setFase] = useState("todas");
   const [pregunta, setPregunta] = useState("todas");
   const [visibilidad, setVisibilidad] = useState("todas");
   const [busqueda, setBusqueda] = useState("");
+  const [confirmando, setConfirmando] = useState<string | null>(null);
+  const [borradas, setBorradas] = useState<Set<string>>(new Set());
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  function borrarUna(id: string) {
+    setConfirmando(null);
+    setBorradas((b) => new Set(b).add(id));
+    startTransition(async () => {
+      const r = await borrarRespuestas([id]);
+      if (!r.ok) {
+        setAviso(r.error);
+        setBorradas((b) => {
+          const n = new Set(b);
+          n.delete(id);
+          return n;
+        });
+      }
+      onCambio();
+    });
+  }
 
   const nombres = useMemo(() => new Map(datos.iglesias.map((i) => [i.id, i.nombre])), [datos.iglesias]);
   const q = normalizarRespuesta(busqueda);
 
   const lista = datos.respuestas.filter((r) => {
+    if (borradas.has(r.id)) return false;
     const visible = r.visible;
     if (iglesia !== "todas" && r.iglesia_id !== iglesia) return false;
     if (fase !== "todas" && String(r.fase) !== fase) return false;
@@ -107,6 +129,8 @@ export function ListaRespuestas({ datos }: { datos: DatosAdmin }) {
         El CSV incluye también las respuestas de actividades anteriores (reinicios), con fecha de cada sesión.
       </p>
 
+      {aviso && <p className="rounded-lg bg-ladrillo-800/50 px-3 py-2 text-sm">{aviso}</p>}
+
       {lista.length === 0 ? (
         <p className="rounded-xl border border-dashed border-foreground/15 p-10 text-center text-foreground/50">
           No hay respuestas con esos filtros.
@@ -132,11 +156,108 @@ export function ListaRespuestas({ datos }: { datos: DatosAdmin }) {
                 <span className="hidden shrink-0 text-xs tabular-nums text-foreground/40 sm:block">
                   {new Date(r.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
+                {confirmando === r.id ? (
+                  <button
+                    type="button"
+                    onClick={() => borrarUna(r.id)}
+                    className="shrink-0 rounded-md bg-red-700 px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-600"
+                  >
+                    ¿Borrar? Sí
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmando(r.id)}
+                    title="Borrar esta respuesta"
+                    aria-label={`Borrar "${r.texto}"`}
+                    className="shrink-0 rounded-md px-2 py-1 text-xs text-foreground/40 hover:bg-red-900/40 hover:text-red-200"
+                  >
+                    🗑
+                  </button>
+                )}
               </li>
             );
           })}
         </ul>
       )}
+
+      <BorrarTodo datos={datos} onCambio={onCambio} />
     </div>
+  );
+}
+
+/** Empezar de cero: borra todas las respuestas (de una iglesia o de todas) y deja la TV en Inicio. */
+function BorrarTodo({ datos, onCambio }: { datos: DatosAdmin; onCambio: () => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const [alcance, setAlcance] = useState("todas");
+  const [texto, setTexto] = useState("");
+  const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
+  const [pendiente, startTransition] = useTransition();
+  const nombre = alcance === "todas" ? "todas las iglesias" : datos.iglesias.find((i) => i.id === alcance)?.nombre;
+
+  function borrar() {
+    startTransition(async () => {
+      const r = await borrarTodoYReiniciar(alcance === "todas" ? null : alcance);
+      if (r.ok) {
+        setMensaje({ ok: true, texto: `Listo: se borraron ${r.datos} respuestas y ${nombre} quedó en Inicio.` });
+        setAbierto(false);
+        setTexto("");
+      } else setMensaje({ ok: false, texto: r.error });
+      onCambio();
+    });
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-red-900/50 bg-red-950/20 p-4">
+      <h2 className="font-semibold text-red-200">Empezar de cero</h2>
+      <p className="mt-1 text-sm text-foreground/60">
+        Borra para siempre todas las respuestas (también las de pruebas y actividades anteriores) y deja la TV en
+        Inicio con el muro vacío. Si querés guardarlas, exportá el CSV antes.
+      </p>
+      {!abierto ? (
+        <button
+          type="button"
+          onClick={() => {
+            setAbierto(true);
+            setMensaje(null);
+          }}
+          className="mt-3 rounded-lg border border-red-700 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-900/40"
+        >
+          Borrar todo y reiniciar…
+        </button>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <select value={alcance} onChange={(e) => setAlcance(e.target.value)} className={selectCls} aria-label="Qué iglesia">
+            <option value="todas">Todas las iglesias</option>
+            {datos.iglesias.map((i) => (
+              <option key={i.id} value={i.id}>
+                Solo {i.nombre}
+              </option>
+            ))}
+          </select>
+          <input
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="Escribí BORRAR"
+            aria-label="Escribí BORRAR para confirmar"
+            className={`${selectCls} w-40`}
+          />
+          <button
+            type="button"
+            onClick={borrar}
+            disabled={texto.trim().toUpperCase() !== "BORRAR" || pendiente}
+            className="rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600 disabled:opacity-40"
+          >
+            {pendiente ? "Borrando…" : `Borrar ${nombre}`}
+          </button>
+          <button type="button" onClick={() => setAbierto(false)} className="rounded-lg px-3 py-2 text-sm text-foreground/60">
+            Cancelar
+          </button>
+        </div>
+      )}
+      {mensaje && (
+        <p className={`mt-3 text-sm ${mensaje.ok ? "text-emerald-300" : "text-red-200"}`}>{mensaje.texto}</p>
+      )}
+    </section>
   );
 }

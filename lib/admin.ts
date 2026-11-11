@@ -129,3 +129,77 @@ export async function editarIglesia(id: string, d: DatosIglesia): Promise<Result
     return fallo("No se pudo guardar la iglesia.");
   }
 }
+
+/**
+ * Borra respuestas sueltas (para siempre). Avisa a las pantallas de esas sesiones para
+ * que relean. El muro ya construido es una foto: no cambia hasta reiniciar.
+ */
+export async function borrarRespuestas(ids: string[]): Promise<Resultado<number>> {
+  try {
+    if (!(await esAdmin())) return fallo(SIN_PERMISO);
+    if (!Array.isArray(ids) || ids.length === 0 || ids.length > 500) return fallo("Nada para borrar.");
+    const db = getServiceSupabase();
+    const { data, error } = await db.from("respuestas").delete().in("id", ids).select("sesion_id");
+    if (error) throw new Error(error.message);
+    const sesiones = [...new Set((data ?? []).map((r: { sesion_id: string }) => r.sesion_id))];
+    await Promise.all(sesiones.map((s) => db.rpc("tocar_sesion", { p_sesion: s })));
+    return { ok: true, datos: data?.length ?? 0 };
+  } catch (e) {
+    console.error("borrarRespuestas", e);
+    return fallo("No se pudieron borrar las respuestas.");
+  }
+}
+
+/**
+ * Empezar de cero: borra TODAS las respuestas (también de actividades anteriores) de una
+ * iglesia o de todas (`iglesiaId` null), borra las sesiones viejas y deja la actual en Inicio
+ * con el muro vacío. No se puede deshacer.
+ */
+export async function borrarTodoYReiniciar(iglesiaId: string | null): Promise<Resultado<number>> {
+  try {
+    if (!(await esAdmin())) return fallo(SIN_PERMISO);
+    const db = getServiceSupabase();
+
+    let ids: string[];
+    if (iglesiaId) ids = [iglesiaId];
+    else {
+      const { data, error } = await db.from("iglesias").select("id");
+      if (error) throw new Error(error.message);
+      ids = (data ?? []).map((i: { id: string }) => i.id);
+    }
+    if (ids.length === 0) return { ok: true, datos: 0 };
+
+    const borradas = await db.from("respuestas").delete({ count: "exact" }).in("iglesia_id", ids);
+    if (borradas.error) throw new Error(borradas.error.message);
+    const viejas = await db.from("sesiones").delete().in("iglesia_id", ids).eq("activa", false);
+    if (viejas.error) throw new Error(viejas.error.message);
+
+    // La sesión activa vuelve a Inicio (subiendo version y rev: las TVs y celulares se actualizan)
+    const { data: activas, error: e3 } = await db
+      .from("sesiones")
+      .select("id, version, rev_respuestas")
+      .in("iglesia_id", ids)
+      .eq("activa", true);
+    if (e3) throw new Error(e3.message);
+    await Promise.all(
+      (activas ?? []).map((s: { id: string; version: number; rev_respuestas: number }) =>
+        db
+          .from("sesiones")
+          .update({
+            fase: "lobby",
+            pregunta_actual: 0,
+            entrada_abierta: false,
+            muro: null,
+            muro_construido_at: null,
+            version: s.version + 1,
+            rev_respuestas: s.rev_respuestas + 1,
+          })
+          .eq("id", s.id),
+      ),
+    );
+    return { ok: true, datos: borradas.count ?? 0 };
+  } catch (e) {
+    console.error("borrarTodoYReiniciar", e);
+    return fallo("No se pudo borrar. Probá de nuevo.");
+  }
+}

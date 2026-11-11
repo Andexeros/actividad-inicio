@@ -27,7 +27,7 @@ si(publica, "clave pública para el navegador", "falta NEXT_PUBLIC_SUPABASE_ANON
 si(servicio, "clave de servicio", "falta SUPABASE_SERVICE_ROLE_KEY (o SUPABASE_SECRET_KEY)");
 {
   const v = process.env.ADMIN_PIN;
-  if (!v) mal("falta ADMIN_PIN (para entrar a /admin)");
+  if (!v) aviso("ADMIN_PIN no está: el PIN de admin es 1234 (conviene cambiarlo)");
   else if (!/^[0-9]{4,8}$/.test(v)) mal("ADMIN_PIN debe tener entre 4 y 8 números");
   else ok("ADMIN_PIN");
 }

@@ -64,8 +64,11 @@ function pinesIguales(a: string, b: string): boolean {
   return timingSafeEqual(ha, hb);
 }
 
-function adminPin(): string | null {
-  return process.env.ADMIN_PIN || null;
+/** PIN del admin si no se carga ADMIN_PIN en Vercel (pedido explícito; conviene cambiarlo). */
+const PIN_ADMIN_POR_DEFECTO = "1234";
+
+function adminPin(): string {
+  return process.env.ADMIN_PIN || PIN_ADMIN_POR_DEFECTO;
 }
 
 /** Demora fija ante un PIN incorrecto (frena el "probar todos los PIN"). */
