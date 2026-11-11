@@ -3,9 +3,9 @@
 import { useEffect, useState, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { actividad } from "@/config/actividad";
-import { ejecutarAccion, moderarRespuesta, reiniciarActividad } from "@/lib/control";
+import { moderarRespuesta, moverPaso, reiniciarActividad } from "@/lib/control";
 import { entradaActual } from "@/lib/fases";
-import { accionesDisponibles, ETIQUETA_ACCION, ETIQUETA_FASE, type Accion } from "@/lib/maquina";
+import { ETIQUETA_FASE, PASOS, pasoActual } from "@/lib/maquina";
 import type { Iglesia, Sesion } from "@/lib/types";
 import { useRespuestasControl } from "./use-respuestas-control";
 
@@ -20,7 +20,7 @@ type Props = {
   compacto?: boolean;
 };
 
-/** Botones de fase + moderación + reinicio. Lo usan /[iglesia]/host y /admin. */
+/** Avanzar/Retroceder + moderación + reinicio. Lo usa /[iglesia]/host (el líder). */
 export function PanelControl({ iglesia, sesion, onSesion, compacto = false }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
@@ -55,18 +55,19 @@ export function PanelControl({ iglesia, sesion, onSesion, compacto = false }: Pr
     return <p className="text-foreground/60">No hay sesión activa para esta iglesia.</p>;
   }
 
-  const { principal, secundarias } = accionesDisponibles(sesion, TOTAL_PREGUNTAS);
+  const paso = pasoActual(sesion);
+  const siguiente = PASOS[paso + 1] ?? null;
   const entrada = entradaActual(sesion);
   const delaPregunta = entrada
     ? respuestas.filter((r) => r.fase === entrada.fase && r.pregunta === entrada.pregunta)
     : [];
   const ocultas = respuestas.filter((r) => !r.visible).length;
 
-  function accionar(accion: Accion) {
+  function mover(direccion: 1 | -1) {
     if (!sesion) return;
     setError(null);
     startTransition(async () => {
-      const r = await ejecutarAccion(iglesia.id, accion, sesion.version);
+      const r = await moverPaso(iglesia.id, direccion, sesion.version);
       if (r.ok) {
         onSesion(r.datos);
         try {
@@ -103,36 +104,26 @@ export function PanelControl({ iglesia, sesion, onSesion, compacto = false }: Pr
 
       {/* Acciones */}
       <section className="flex flex-col gap-2">
-        {principal ? (
-          <motion.button
-            type="button"
-            onClick={() => accionar(principal)}
-            disabled={pendiente}
-            whileTap={{ scale: 0.97 }}
-            className={`${compacto ? "h-14 text-3xl" : "h-20 text-4xl"} rounded-2xl bg-ladrillo-500 font-display tracking-wider text-ladrillo-50 shadow-[inset_0_-6px_0_var(--color-ladrillo-800)] hover:bg-ladrillo-400 disabled:opacity-60`}
-          >
-            {pendiente ? "…" : ETIQUETA_ACCION[principal]}
-          </motion.button>
-        ) : (
-          <p className="rounded-2xl border border-dashed border-foreground/20 p-4 text-center text-foreground/60">
-            Actividad terminada. Para volver a empezar, reiniciá.
-          </p>
-        )}
-        {secundarias.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {secundarias.map((a) => (
-              <button
-                key={a}
-                type="button"
-                onClick={() => accionar(a)}
-                disabled={pendiente}
-                className="flex-1 rounded-xl border border-foreground/20 px-4 py-3 font-semibold text-foreground/90 hover:bg-foreground/5 disabled:opacity-50"
-              >
-                {ETIQUETA_ACCION[a]}
-              </button>
-            ))}
-          </div>
-        )}
+        <p className="text-center text-xs uppercase tracking-[0.2em] text-foreground/50">
+          Paso {paso + 1} de {PASOS.length} · {PASOS[paso]}
+        </p>
+        <motion.button
+          type="button"
+          onClick={() => mover(1)}
+          disabled={pendiente || !siguiente}
+          whileTap={{ scale: 0.97 }}
+          className={`${compacto ? "h-14 text-3xl" : "h-20 text-4xl"} rounded-2xl bg-ladrillo-500 font-display tracking-wider text-ladrillo-50 shadow-[inset_0_-6px_0_var(--color-ladrillo-800)] hover:bg-ladrillo-400 disabled:opacity-60`}
+        >
+          {pendiente ? "…" : siguiente ? `Avanzar: ${siguiente} →` : "Actividad terminada"}
+        </motion.button>
+        <button
+          type="button"
+          onClick={() => mover(-1)}
+          disabled={pendiente || paso === 0}
+          className="rounded-xl border border-foreground/20 px-4 py-3 font-semibold text-foreground/90 hover:bg-foreground/5 disabled:opacity-40"
+        >
+          ← Retroceder{paso > 0 ? ` a ${PASOS[paso - 1]}` : ""}
+        </button>
         <AnimatePresence>
           {error && (
             <motion.p

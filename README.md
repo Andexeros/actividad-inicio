@@ -35,28 +35,22 @@ Stack: Next.js 16 (App Router, TS) · Tailwind 4 · Supabase (Postgres + Realtim
 - **`CHECKLIST.md`**: deploy en Vercel, prueba con celulares reales y lista para el día del evento.
 - **`npm run chequeo`**: revisa variables, migraciones, que cada iglesia esté en Inicio y la seguridad de la clave pública. Solo lee, no cambia nada.
 
-## Panel del líder (`/[iglesia]/host`)
+## Manejar la actividad: Avanzar / Retroceder
 
-Se entra con el PIN de la iglesia (`iglesias.host_pin`, o `HOST_PIN` si no tiene). La sesión dura 12 h; si se cambia el PIN, se cierran las sesiones abiertas. Cada iglesia avanza a su ritmo: solo su líder puede cambiar fases, moderar y reiniciar (el admin solo mira).
+Cada iglesia avanza a su ritmo. La actividad es una línea de 9 pasos:
 
-Recorrido apretando el botón principal:
+**Inicio → Pregunta 1 → Pregunta 2 → Pregunta 3 → Muro → Clase → Fase 2 → Derrumbe → Final**
 
-| Fase | Botón principal | Otros botones |
-|---|---|---|
-| Inicio | Abrir entrada | |
-| Fase 1 (P1, P2) | Siguiente pregunta | Cerrar respuestas |
-| Fase 1 (P3) | Cerrar respuestas | |
-| Fase 1, cerrada | Construir el muro | Siguiente pregunta*, Reabrir respuestas |
-| Muro construido | Dar la clase | Pasar a fase 2 |
-| Clase | Pasar a fase 2 | |
-| Fase 2 | Derribar | Cerrar / Reabrir respuestas |
-| Derrumbe | Pantalla final | |
-| Final | — (solo reiniciar) | |
+- Las preguntas y la Fase 2 reciben respuestas; el resto no (se abre y cierra solo).
+- Al **avanzar** de Pregunta 3 a Muro se construye el muro con las respuestas visibles de la fase 1 (la foto queda guardada: ocultar una respuesta después ya no lo cambia).
+- **Retroceder** deshace el último paso: de Muro a Pregunta 3 vuelve a abrir las respuestas (y al avanzar se arma el muro de nuevo); de Derrumbe a Fase 2 el muro vuelve a aparecer quieto, con los agujeros de los golpes.
+- En la Fase 2, al llegar al 100% de fuerza pasa solo a Derrumbe.
+- Si se aprieta dos veces seguidas (o desde dos pantallas a la vez) se mueve un solo paso.
 
-\* si quedan preguntas.
+**Desde la TV** (`/[iglesia]/tv`): abajo aparecen **← Retroceder** y **Avanzar: <paso siguiente> →** (se esconden solos sin mover el mouse). También con el teclado: **→ / ←**, o **AvPág / RePág**, que es lo que manda un **puntero de presentaciones**. La primera vez pide el PIN de la iglesia en esa TV (dura 12 h), así nadie que conozca la dirección puede avanzarla.
 
-- Si dos líderes (o líder + admin) aprietan a la vez, se aplica uno solo y al otro le avisa que la pantalla cambió.
-- "Construir el muro" guarda la foto de las respuestas visibles de fase 1: ocultar una respuesta después ya no cambia el muro.
+**Desde el celular del líder** (`/[iglesia]/host`): los mismos dos botones, más la lista de respuestas en vivo para ocultar/mostrar y el reinicio. Se entra con el PIN de la iglesia (`iglesias.host_pin`, o `HOST_PIN` si no tiene); si se cambia el PIN, se cierran las sesiones abiertas. El admin solo mira.
+
 - Lista de respuestas en vivo (incluidas las que ocultó el filtro, marcadas "filtro automático") con Ocultar/Mostrar.
 - "Reiniciar actividad" (con confirmación) crea una sesión nueva en Inicio; las respuestas viejas quedan en la base.
 

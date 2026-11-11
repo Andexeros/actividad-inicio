@@ -10,10 +10,10 @@ function suscribirFullscreen(cb: () => void) {
 }
 
 /**
- * Botones de pantalla completa y sonido (abajo a la izquierda). Se esconden solos,
- * junto con el cursor, después de 3 s sin mover el mouse.
+ * Barra de abajo al centro: control de la actividad (children) + pantalla completa y sonido.
+ * Se esconde sola, junto con el cursor, después de 3 s sin mover el mouse.
  */
-export function ControlesTv() {
+export function ControlesTv({ children }: { children?: React.ReactNode }) {
   const [visible, setVisible] = useState(true);
   const [sonido, setSonido] = useState(false);
   const pantallaCompleta = useSyncExternalStore(
@@ -88,8 +88,10 @@ export function ControlesTv() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2"
+          className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2"
         >
+          {children}
+          <div className="flex gap-2">
           <button
             type="button"
             onClick={() => void alternarPantalla()}
@@ -106,6 +108,7 @@ export function ControlesTv() {
           >
             {sonido ? "🔊 Sonido" : "🔇 Activar sonido"}
           </button>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

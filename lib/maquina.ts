@@ -1,36 +1,9 @@
 import type { Fase, Sesion } from "./types";
 
 /**
- * Máquina de estados de la actividad. Pura (sin base de datos) para poder probarla
- * y para que host y admin muestren exactamente los mismos botones.
- *
- * lobby ─abrir─▶ fase1_respondiendo (P1 → P2 → P3, abrir/cerrar entrada)
- *       ─construir─▶ fase1_muro ─clase─▶ entre_fases ─fase 2─▶ fase2
- *       ─derribar─▶ derrumbe ─final─▶ final
+ * Fases de la actividad y su recorrido como pasos lineales (Avanzar / Retroceder).
+ * Pura (sin base de datos) para que TV y panel del líder decidan igual.
  */
-
-export type Accion =
-  | "abrir_entrada"
-  | "siguiente_pregunta"
-  | "cerrar_entrada"
-  | "reabrir_entrada"
-  | "construir_muro"
-  | "empezar_clase"
-  | "pasar_fase2"
-  | "derribar"
-  | "pantalla_final";
-
-export const ETIQUETA_ACCION: Record<Accion, string> = {
-  abrir_entrada: "Abrir entrada",
-  siguiente_pregunta: "Siguiente pregunta",
-  cerrar_entrada: "Cerrar respuestas",
-  reabrir_entrada: "Reabrir respuestas",
-  construir_muro: "Construir el muro",
-  empezar_clase: "Dar la clase",
-  pasar_fase2: "Pasar a fase 2",
-  derribar: "Derribar",
-  pantalla_final: "Pantalla final",
-};
 
 export const ETIQUETA_FASE: Record<Fase, string> = {
   lobby: "Inicio",
@@ -44,68 +17,56 @@ export const ETIQUETA_FASE: Record<Fase, string> = {
 
 type EstadoSesion = Pick<Sesion, "fase" | "pregunta_actual" | "entrada_abierta">;
 
-export function accionesDisponibles(
-  s: EstadoSesion,
-  totalPreguntas: number,
-): { principal: Accion | null; secundarias: Accion[] } {
-  const hayOtraPregunta = s.pregunta_actual < totalPreguntas - 1;
+// ───────────────────────── Pasos lineales (Avanzar / Retroceder) ─────────────────────────
+//
+// La actividad como una línea de pasos. Cada iglesia avanza o retrocede a su ritmo.
+// Abrir/cerrar la entrada es automático: las preguntas y la fase 2 reciben respuestas.
+
+export const PASOS = [
+  "Inicio",
+  "Pregunta 1",
+  "Pregunta 2",
+  "Pregunta 3",
+  "Muro",
+  "Clase",
+  "Fase 2",
+  "Derrumbe",
+  "Final",
+] as const;
+
+/** Índice del paso del muro (al llegar se construye con las respuestas visibles). */
+export const PASO_MURO = 4;
+
+/** En qué paso está una sesión. */
+export function pasoActual(s: EstadoSesion): number {
   switch (s.fase) {
     case "lobby":
-      return { principal: "abrir_entrada", secundarias: [] };
+      return 0;
     case "fase1_respondiendo":
-      if (s.entrada_abierta) {
-        return hayOtraPregunta
-          ? { principal: "siguiente_pregunta", secundarias: ["cerrar_entrada"] }
-          : { principal: "cerrar_entrada", secundarias: [] };
-      }
-      return {
-        principal: "construir_muro",
-        secundarias: hayOtraPregunta ? ["siguiente_pregunta", "reabrir_entrada"] : ["reabrir_entrada"],
-      };
+      return 1 + Math.min(s.pregunta_actual, 2);
     case "fase1_muro":
-      return { principal: "empezar_clase", secundarias: ["pasar_fase2"] };
+      return 4;
     case "entre_fases":
-      return { principal: "pasar_fase2", secundarias: [] };
+      return 5;
     case "fase2":
-      return {
-        principal: "derribar",
-        secundarias: [s.entrada_abierta ? "cerrar_entrada" : "reabrir_entrada"],
-      };
+      return 6;
     case "derrumbe":
-      return { principal: "pantalla_final", secundarias: [] };
+      return 7;
     case "final":
-      return { principal: null, secundarias: [] };
+      return 8;
   }
 }
 
-export function accionPermitida(s: EstadoSesion, accion: Accion, totalPreguntas: number): boolean {
-  const { principal, secundarias } = accionesDisponibles(s, totalPreguntas);
-  return principal === accion || secundarias.includes(accion);
-}
-
-/**
- * Cambios a aplicar en la sesión. `construir_muro` además necesita la foto del muro,
- * que se arma en la base (función construir_muro).
- */
-export function cambiosDeAccion(s: EstadoSesion, accion: Accion): Partial<EstadoSesion> {
-  switch (accion) {
-    case "abrir_entrada":
-      return { fase: "fase1_respondiendo", pregunta_actual: 0, entrada_abierta: true };
-    case "siguiente_pregunta":
-      return { pregunta_actual: s.pregunta_actual + 1, entrada_abierta: true };
-    case "cerrar_entrada":
-      return { entrada_abierta: false };
-    case "reabrir_entrada":
-      return { entrada_abierta: true };
-    case "construir_muro":
-      return { fase: "fase1_muro", entrada_abierta: false };
-    case "empezar_clase":
-      return { fase: "entre_fases", entrada_abierta: false };
-    case "pasar_fase2":
-      return { fase: "fase2", pregunta_actual: 0, entrada_abierta: true };
-    case "derribar":
-      return { fase: "derrumbe", entrada_abierta: false };
-    case "pantalla_final":
-      return { fase: "final", entrada_abierta: false };
-  }
+/** Estado de la sesión para un paso (el muro del paso 4 se arma aparte, en la base). */
+export function estadoDePaso(paso: number): EstadoSesion {
+  if (paso >= 1 && paso <= 3) return { fase: "fase1_respondiendo", pregunta_actual: paso - 1, entrada_abierta: true };
+  const tabla: Record<number, EstadoSesion> = {
+    0: { fase: "lobby", pregunta_actual: 0, entrada_abierta: false },
+    4: { fase: "fase1_muro", pregunta_actual: 2, entrada_abierta: false },
+    5: { fase: "entre_fases", pregunta_actual: 0, entrada_abierta: false },
+    6: { fase: "fase2", pregunta_actual: 0, entrada_abierta: true },
+    7: { fase: "derrumbe", pregunta_actual: 0, entrada_abierta: false },
+    8: { fase: "final", pregunta_actual: 0, entrada_abierta: false },
+  };
+  return tabla[paso];
 }

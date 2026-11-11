@@ -5,15 +5,13 @@
  * tocar la base con service role.
  */
 
-import { actividad } from "@/config/actividad";
 import { cerrarHost, esperarPorError, iniciarHost, puedeControlar } from "@/lib/auth";
-import { accionPermitida, cambiosDeAccion, type Accion } from "@/lib/maquina";
+import { estadoDePaso, PASO_MURO, PASOS, pasoActual } from "@/lib/maquina";
 import { getServiceSupabase } from "@/lib/supabase/server";
 import type { Respuesta, Sesion } from "@/lib/types";
 
 export type Resultado<T = undefined> = { ok: true; datos: T } | { ok: false; error: string };
 
-const TOTAL_PREGUNTAS = actividad.fase1.preguntas.length;
 const SIN_PERMISO = "Tu sesión de líder venció. Volvé a ingresar el PIN.";
 
 function fallo(error: string): { ok: false; error: string } {
@@ -49,12 +47,13 @@ export async function logoutHost(iglesiaId: string): Promise<void> {
 }
 
 /**
- * Ejecuta un botón de la máquina de estados. `versionVista` evita que dos líderes
- * (dos celulares del mismo líder, por ejemplo) apliquen la misma acción dos veces: si la sesión cambió, se rechaza.
+ * Avanza (+1) o retrocede (-1) un paso de la actividad (ver PASOS en lib/maquina.ts).
+ * `versionVista` evita que un doble clic (o dos pantallas a la vez) mueva dos pasos:
+ * si la sesión cambió mientras tanto, se rechaza.
  */
-export async function ejecutarAccion(
+export async function moverPaso(
   iglesiaId: string,
-  accion: Accion,
+  direccion: 1 | -1,
   versionVista: number,
 ): Promise<Resultado<Sesion>> {
   try {
@@ -62,37 +61,45 @@ export async function ejecutarAccion(
     const sesion = await sesionActiva(iglesiaId);
     if (!sesion) return fallo("No hay una sesión activa.");
     if (sesion.version !== versionVista) {
-      return fallo("La pantalla cambió mientras tanto (¿otro líder?). Revisá y volvé a intentar.");
+      return fallo("La pantalla cambió recién. Mirá en qué paso está y volvé a intentar.");
     }
-    if (!accionPermitida(sesion, accion, TOTAL_PREGUNTAS)) {
-      return fallo("Esa acción no corresponde en esta fase.");
-    }
+    const actual = pasoActual(sesion);
+    const destino = actual + direccion;
+    if (destino < 0) return fallo("Ya estás en el primer paso.");
+    if (destino >= PASOS.length) return fallo("Ya estás en el último paso.");
 
     const db = getServiceSupabase();
-    if (accion === "construir_muro") {
+    // Al llegar al muro desde la última pregunta, se construye con las respuestas visibles
+    if (destino === PASO_MURO && direccion === 1) {
       const { data, error } = await db.rpc("construir_muro", {
         p_sesion: sesion.id,
         p_version: sesion.version,
       });
       if (error) throw new Error(error.message);
       const filas = (data ?? []) as Sesion[];
-      if (!filas.length) return fallo("La pantalla cambió mientras tanto. Volvé a intentar.");
+      if (!filas.length) return fallo("La pantalla cambió recién. Volvé a intentar.");
       return { ok: true, datos: filas[0] };
     }
 
+    const cambios: Partial<Sesion> = { ...estadoDePaso(destino), version: sesion.version + 1 };
+    // Volver a las preguntas (o al inicio) desarma el muro: al avanzar se arma de nuevo
+    if (destino < PASO_MURO) {
+      cambios.muro = null;
+      cambios.muro_construido_at = null;
+    }
     const { data, error } = await db
       .from("sesiones")
-      .update({ ...cambiosDeAccion(sesion, accion), version: sesion.version + 1 })
+      .update(cambios)
       .eq("id", sesion.id)
       .eq("version", sesion.version)
       .select("*")
       .returns<Sesion[]>();
     if (error) throw new Error(error.message);
-    if (!data?.length) return fallo("La pantalla cambió mientras tanto. Volvé a intentar.");
+    if (!data?.length) return fallo("La pantalla cambió recién. Volvé a intentar.");
     return { ok: true, datos: data[0] };
   } catch (e) {
-    console.error("ejecutarAccion", e);
-    return fallo("No se pudo aplicar el cambio. Probá de nuevo.");
+    console.error("moverPaso", e);
+    return fallo("No se pudo cambiar de paso. Probá de nuevo.");
   }
 }
 

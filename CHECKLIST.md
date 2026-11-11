@@ -37,11 +37,13 @@
 - [ ] Notebook conectada a la TV, con cargador, Wi-Fi o datos estables.
 - [ ] Abrir `/<iglesia>/tv` en Chrome, tocar **Pantalla completa** y después **Activar sonido** (los navegadores no dejan sonar nada hasta un clic). Subir el volumen.
 - [ ] La pantalla no se apaga sola: la TV lo pide al navegador. Igual, desactivar el ahorro de energía de la notebook.
-- [ ] El líder entra a `/<iglesia>/host` en su celular con su PIN (sesión de 12 h).
+- [ ] En la TV, mover el mouse y tocar **Manejar la actividad desde esta TV**: poner el PIN de la iglesia (dura 12 h). Desde ahí se avanza con **Avanzar →**, con la flecha → o con un puntero de presentaciones.
+- [ ] (Opcional) El líder entra a `/<iglesia>/host` en su celular con el mismo PIN para ocultar respuestas o reiniciar.
 - [ ] Escanear el QR con un celular de prueba: ver "Esperando que empiece…" y el contador de "conectados" en la TV.
 
 **Durante**
-- [ ] Poner pantalla completa **antes** de "Construir el muro": si la ventana cambia de tamaño mientras se construye, el muro se completa de golpe.
+- [ ] Poner pantalla completa **antes** de avanzar al paso "Muro": si la ventana cambia de tamaño mientras se construye, el muro se completa de golpe.
+- [ ] Si se avanzó de más, **← Retroceder** (o la flecha ←) vuelve un paso.
 - [ ] Si algo se traba: recargar la TV. Siempre recupera el estado exacto, no repite animaciones.
 - [ ] Si se cae internet en la TV, aparece "Reconectando…" y se pone al día sola al volver.
 

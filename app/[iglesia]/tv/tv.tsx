@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { actividad } from "@/config/actividad";
 import { NubePalabras } from "@/components/nube-palabras";
 import { ControlesTv } from "@/components/tv/controles";
+import { useControlTv } from "@/components/tv/use-control-tv";
 import { QrIglesia } from "@/components/tv/qr";
 import { entradaActual } from "@/lib/fases";
 import { usePresencia } from "@/lib/presencia";
@@ -20,9 +21,19 @@ const MuroCanvas = dynamic(() => import("@/components/tv/muro-canvas").then((m) 
 const FASES_CON_MURO: Fase[] = ["fase1_muro", "entre_fases", "fase2", "derrumbe", "final"];
 const ease = [0.22, 1, 0.36, 1] as const;
 
-/** TV conectada a Supabase (sesión, respuestas y presencia en vivo). */
-export function Tv({ iglesia, sesionInicial }: { iglesia: Iglesia; sesionInicial: Sesion | null }) {
-  const { sesion, conexion } = useSesionActiva(iglesia.id, sesionInicial);
+/** TV conectada a Supabase (sesión, respuestas y presencia en vivo) y con el control de la actividad. */
+export function Tv({
+  iglesia,
+  sesionInicial,
+  autorizado,
+}: {
+  iglesia: Iglesia;
+  sesionInicial: Sesion | null;
+  /** ¿Esta TV ya ingresó el PIN de la iglesia? */
+  autorizado: boolean;
+}) {
+  const { sesion, setSesion, conexion } = useSesionActiva(iglesia.id, sesionInicial);
+  const control = useControlTv({ iglesia, sesion, onSesion: setSesion, autorizado });
   const { respuestas, cargadas } = useRespuestas(iglesia.id, sesion?.id ?? null, sesion?.rev_respuestas ?? 0);
   const conectados = usePresencia(iglesia.id);
   return (
@@ -33,6 +44,7 @@ export function Tv({ iglesia, sesionInicial }: { iglesia: Iglesia; sesionInicial
       cargadas={cargadas}
       conectados={conectados}
       conexion={conexion}
+      control={control}
     />
   );
 }
@@ -44,10 +56,12 @@ type VistaProps = {
   cargadas: boolean;
   conectados: number;
   conexion: EstadoConexion;
+  /** Botones para avanzar la actividad (barra) y capas (PIN, avisos). */
+  control?: { barra: React.ReactNode; capas: React.ReactNode };
 };
 
 /** Lo que se ve en la TV, a partir del estado. No sabe de dónde vienen los datos. */
-export function TvVista({ iglesia, sesion, respuestas, cargadas, conectados, conexion }: VistaProps) {
+export function TvVista({ iglesia, sesion, respuestas, cargadas, conectados, conexion, control }: VistaProps) {
   // ¿Vimos EN VIVO el paso a "muro construido"? Solo ahí se anima.
   // Si la TV se abre/recarga con el muro ya construido, aparece quieto.
   const [faseVista, setFaseVista] = useState(sesion?.fase);
@@ -55,8 +69,17 @@ export function TvVista({ iglesia, sesion, respuestas, cargadas, conectados, con
   const [muroListo, setMuroListo] = useState(false);
   // Igual con el derrumbe: explosión solo si se vio pasar de fase 2 a derrumbe
   const [derrumbeAnimadoDe, setDerrumbeAnimadoDe] = useState<string | null>(null);
+  // Si se retrocede desde el derrumbe, el muro vuelve a armarse (quieto, con los golpes de la fase 2)
+  const [rearmado, setRearmado] = useState(0);
   if (sesion?.fase !== faseVista) {
     setFaseVista(sesion?.fase);
+    const antesCaido = faseVista === "derrumbe" || faseVista === "final";
+    const ahoraCaido = sesion?.fase === "derrumbe" || sesion?.fase === "final";
+    if (antesCaido && !ahoraCaido) {
+      setRearmado((n) => n + 1);
+      setDerrumbeAnimadoDe(null);
+      setMuroAnimadoDe(null); // vuelve quieto: la construcción ya se vio
+    }
     if (faseVista === "fase1_respondiendo" && sesion?.fase === "fase1_muro") {
       setMuroAnimadoDe(sesion.id);
       setMuroListo(false);
@@ -116,7 +139,8 @@ export function TvVista({ iglesia, sesion, respuestas, cargadas, conectados, con
           transition={{ duration: 1.6, delay: sesion.fase === "derrumbe" && derrumbeAnimado ? 2.2 : 0 }}
         >
           <MuroCanvas
-            key={sesion.id}
+            // Se rearma si cambia la foto del muro (al reconstruirlo) o al volver desde el derrumbe
+            key={`${sesion.id}:${sesion.muro_construido_at ?? ""}:${rearmado}`}
             claveMuro={sesion.id}
             textos={(sesion.muro ?? []).map((l) => l.texto)}
             animar={muroAnimadoDe === sesion.id}
@@ -159,7 +183,8 @@ export function TvVista({ iglesia, sesion, respuestas, cargadas, conectados, con
           Reconectando…
         </p>
       )}
-      <ControlesTv />
+      {control?.capas}
+      <ControlesTv>{control?.barra}</ControlesTv>
     </main>
   );
 }
