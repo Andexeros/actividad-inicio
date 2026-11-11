@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { PanelControl } from "@/components/control/panel-control";
-import type { DatosAdmin, IglesiaAdmin } from "@/lib/admin";
-import { useSesionActiva } from "@/lib/realtime";
+import { actividad } from "@/config/actividad";
+import type { DatosAdmin, IglesiaAdmin, RespuestaAdmin } from "@/lib/admin";
+import { entradaActual } from "@/lib/fases";
+import { ETIQUETA_FASE } from "@/lib/maquina";
 import type { Sesion } from "@/lib/types";
 
-/** Las iglesias lado a lado (en celular, una por vez con pestañas), cada una con su control. */
+/**
+ * Las iglesias lado a lado (en celular, una por vez con pestañas). SOLO LECTURA:
+ * cada iglesia maneja sus tiempos desde el panel de su líder; acá solo se mira.
+ */
 export function EnVivo({ datos }: { datos: DatosAdmin }) {
   const [elegida, setElegida] = useState(datos.iglesias[0]?.id ?? "");
   if (datos.iglesias.length === 0) {
@@ -14,6 +18,9 @@ export function EnVivo({ datos }: { datos: DatosAdmin }) {
   }
   return (
     <>
+      <p className="mb-4 text-sm text-foreground/50">
+        Vista de solo lectura. Cada líder avanza su iglesia desde <code>/iglesia/host</code>.
+      </p>
       {/* Selector solo en pantallas chicas */}
       <div className="mb-4 flex gap-1 overflow-x-auto lg:hidden">
         {datos.iglesias.map((ig) => (
@@ -34,8 +41,8 @@ export function EnVivo({ datos }: { datos: DatosAdmin }) {
           <div key={ig.id} className={elegida === ig.id ? "block" : "hidden lg:block"}>
             <Columna
               iglesia={ig}
-              sesionInicial={datos.sesiones.find((s) => s.iglesia_id === ig.id) ?? null}
-              conteo={contar(datos, ig.id)}
+              sesion={datos.sesiones.find((s) => s.iglesia_id === ig.id) ?? null}
+              respuestas={datos.respuestas.filter((r) => r.iglesia_id === ig.id)}
             />
           </div>
         ))}
@@ -44,31 +51,28 @@ export function EnVivo({ datos }: { datos: DatosAdmin }) {
   );
 }
 
-function contar(datos: DatosAdmin, iglesiaId: string) {
-  const r = datos.respuestas.filter((x) => x.iglesia_id === iglesiaId && x.visible);
-  return { f1: r.filter((x) => x.fase === 1).length, f2: r.filter((x) => x.fase === 2).length };
-}
-
 function Columna({
   iglesia,
-  sesionInicial,
-  conteo,
+  sesion,
+  respuestas,
 }: {
   iglesia: IglesiaAdmin;
-  sesionInicial: Sesion | null;
-  conteo: { f1: number; f2: number };
+  sesion: Sesion | null;
+  respuestas: RespuestaAdmin[];
 }) {
-  const { sesion, setSesion, conexion } = useSesionActiva(iglesia.id, sesionInicial);
+  const visibles = respuestas.filter((r) => r.visible);
+  const entrada = sesion ? entradaActual(sesion) : null;
+  const deEstaPregunta =
+    sesion?.fase === "fase1_respondiendo"
+      ? visibles.filter((r) => r.fase === 1 && r.pregunta === sesion.pregunta_actual).length
+      : sesion?.fase === "fase2"
+        ? visibles.filter((r) => r.fase === 2).length
+        : null;
+
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-foreground/10 bg-black/20 p-4">
       <header className="flex items-start justify-between gap-2">
-        <div>
-          <h2 className="font-display text-3xl tracking-wide text-ladrillo-400">{iglesia.nombre}</h2>
-          <p className="text-xs text-foreground/50">
-            Fase 1: {conteo.f1} · Fase 2: {conteo.f2}
-            {conexion === "desconectado" && " · reconectando…"}
-          </p>
-        </div>
+        <h2 className="font-display text-3xl tracking-wide text-ladrillo-400">{iglesia.nombre}</h2>
         <div className="flex gap-1 text-xs">
           <a href={`/${iglesia.slug}/tv`} target="_blank" rel="noreferrer" className="rounded-md border border-foreground/20 px-2 py-1 hover:bg-foreground/10">
             TV ↗
@@ -78,7 +82,70 @@ function Columna({
           </a>
         </div>
       </header>
-      <PanelControl iglesia={iglesia} sesion={sesion} onSesion={setSesion} compacto />
+
+      {!sesion ? (
+        <p className="text-sm text-foreground/50">Sin sesión activa.</p>
+      ) : (
+        <div className="rounded-xl border border-foreground/10 bg-black/30 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="rounded-full bg-ladrillo-500/20 px-3 py-1 text-sm font-semibold text-ladrillo-200">
+              {ETIQUETA_FASE[sesion.fase]}
+            </span>
+            <span className={`flex items-center gap-2 text-xs ${entrada ? "text-emerald-300" : "text-foreground/50"}`}>
+              <span className={`size-2 rounded-full ${entrada ? "bg-emerald-400" : "bg-foreground/30"}`} />
+              {entrada ? "Recibiendo respuestas" : "Entrada cerrada"}
+            </span>
+          </div>
+          {sesion.fase === "fase1_respondiendo" && (
+            <p className="mt-3 text-sm leading-snug">
+              <span className="text-xs uppercase tracking-[0.2em] text-foreground/50">
+                Pregunta {sesion.pregunta_actual + 1} de {actividad.fase1.preguntas.length}
+              </span>
+              <br />
+              {actividad.fase1.preguntas[sesion.pregunta_actual]}
+            </p>
+          )}
+          <dl className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+            <Dato titulo="Ahora" valor={deEstaPregunta ?? "—"} />
+            <Dato titulo="Fase 1" valor={visibles.filter((r) => r.fase === 1).length} />
+            <Dato titulo="Fase 2" valor={visibles.filter((r) => r.fase === 2).length} />
+            <Dato titulo="Ocultas" valor={respuestas.length - visibles.length} />
+          </dl>
+        </div>
+      )}
+
+      <div>
+        <h3 className="mb-2 text-xs uppercase tracking-[0.2em] text-foreground/50">Respuestas en vivo</h3>
+        {respuestas.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-foreground/15 p-6 text-center text-sm text-foreground/50">
+            Todavía no hay respuestas.
+          </p>
+        ) : (
+          <ul className="flex max-h-[50vh] flex-col gap-1 overflow-y-auto pr-1">
+            {respuestas.map((r) => (
+              <li
+                key={r.id}
+                className={`flex items-baseline justify-between gap-2 rounded-lg px-3 py-1.5 ${r.visible ? "bg-foreground/5" : "bg-ladrillo-800/20"}`}
+              >
+                <span className={`min-w-0 truncate ${r.visible ? "" : "text-foreground/40 line-through"}`}>{r.texto}</span>
+                <span className="shrink-0 text-xs text-foreground/40">
+                  {r.fase === 1 ? `P${r.pregunta + 1}` : "F2"}
+                  {!r.visible && (r.filtrada ? " · filtro" : " · oculta")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
+  );
+}
+
+function Dato({ titulo, valor }: { titulo: string; valor: number | string }) {
+  return (
+    <div className="rounded-lg bg-foreground/5 py-1.5">
+      <dd className="font-display text-2xl tabular-nums leading-none">{valor}</dd>
+      <dt className="mt-0.5 text-[10px] text-foreground/50">{titulo}</dt>
+    </div>
   );
 }

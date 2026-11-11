@@ -3,27 +3,27 @@
 import { useMemo, useState } from "react";
 import { actividad } from "@/config/actividad";
 import type { DatosAdmin } from "@/lib/admin";
-import { moderarRespuesta } from "@/lib/control";
 import { normalizarRespuesta } from "@/lib/nube";
 
 const selectCls =
   "rounded-lg border border-foreground/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-ladrillo-400";
 
-/** Todas las respuestas de las sesiones activas, con filtros, búsqueda, moderación y exportación. */
-export function ListaRespuestas({ datos, onCambio }: { datos: DatosAdmin; onCambio: () => void }) {
+/**
+ * Todas las respuestas de las sesiones activas, con filtros, búsqueda y exportación.
+ * Solo lectura: ocultar/mostrar lo hace el líder de cada iglesia desde su panel.
+ */
+export function ListaRespuestas({ datos }: { datos: DatosAdmin }) {
   const [iglesia, setIglesia] = useState("todas");
   const [fase, setFase] = useState("todas");
   const [pregunta, setPregunta] = useState("todas");
   const [visibilidad, setVisibilidad] = useState("todas");
   const [busqueda, setBusqueda] = useState("");
-  const [ocultando, setOcultando] = useState<Record<string, boolean>>({});
-  const [error, setError] = useState<string | null>(null);
 
   const nombres = useMemo(() => new Map(datos.iglesias.map((i) => [i.id, i.nombre])), [datos.iglesias]);
   const q = normalizarRespuesta(busqueda);
 
   const lista = datos.respuestas.filter((r) => {
-    const visible = ocultando[r.id] ?? r.visible;
+    const visible = r.visible;
     if (iglesia !== "todas" && r.iglesia_id !== iglesia) return false;
     if (fase !== "todas" && String(r.fase) !== fase) return false;
     if (fase === "1" && pregunta !== "todas" && String(r.pregunta) !== pregunta) return false;
@@ -32,20 +32,6 @@ export function ListaRespuestas({ datos, onCambio }: { datos: DatosAdmin; onCamb
     if (q && !normalizarRespuesta(r.texto).includes(q)) return false;
     return true;
   });
-
-  async function alternar(id: string, iglesiaId: string, visible: boolean) {
-    setOcultando((p) => ({ ...p, [id]: visible }));
-    const r = await moderarRespuesta(iglesiaId, id, visible);
-    if (!r.ok) {
-      setError(r.error);
-      setOcultando((p) => {
-        const { [id]: _, ...resto } = p;
-        void _;
-        return resto;
-      });
-    }
-    onCambio();
-  }
 
   const slugElegido = datos.iglesias.find((i) => i.id === iglesia)?.slug;
 
@@ -120,7 +106,6 @@ export function ListaRespuestas({ datos, onCambio }: { datos: DatosAdmin; onCamb
       <p className="-mt-2 text-xs text-foreground/40">
         El CSV incluye también las respuestas de actividades anteriores (reinicios), con fecha de cada sesión.
       </p>
-      {error && <p className="rounded-lg bg-ladrillo-800/50 px-3 py-2 text-sm">{error}</p>}
 
       {lista.length === 0 ? (
         <p className="rounded-xl border border-dashed border-foreground/15 p-10 text-center text-foreground/50">
@@ -129,7 +114,7 @@ export function ListaRespuestas({ datos, onCambio }: { datos: DatosAdmin; onCamb
       ) : (
         <ul className="divide-y divide-foreground/10 overflow-hidden rounded-xl border border-foreground/10">
           {lista.map((r) => {
-            const visible = ocultando[r.id] ?? r.visible;
+            const visible = r.visible;
             return (
               <li key={r.id} className={`flex items-center gap-3 px-3 py-2 ${visible ? "" : "bg-ladrillo-800/20"}`}>
                 <span className="w-20 shrink-0 truncate text-xs font-semibold text-ladrillo-200">
@@ -140,20 +125,13 @@ export function ListaRespuestas({ datos, onCambio }: { datos: DatosAdmin; onCamb
                 </span>
                 <span className={`min-w-0 flex-1 truncate ${visible ? "" : "text-foreground/40 line-through"}`}>
                   {r.texto}
-                  {r.filtrada && <span className="ml-2 text-xs text-foreground/40 no-underline">(filtro)</span>}
+                  {!r.visible && (
+                    <span className="ml-2 text-xs text-foreground/40 no-underline">({r.filtrada ? "filtro" : "oculta"})</span>
+                  )}
                 </span>
                 <span className="hidden shrink-0 text-xs tabular-nums text-foreground/40 sm:block">
                   {new Date(r.created_at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => void alternar(r.id, r.iglesia_id, !visible)}
-                  className={`shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold ${
-                    visible ? "border border-foreground/20 hover:bg-foreground/10" : "bg-foreground/15 hover:bg-foreground/25"
-                  }`}
-                >
-                  {visible ? "Ocultar" : "Mostrar"}
-                </button>
               </li>
             );
           })}

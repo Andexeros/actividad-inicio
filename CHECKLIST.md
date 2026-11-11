@@ -47,7 +47,7 @@
 
 **Si algo falla**
 - Celular sin conexión: recargar la página; la dirección corta está debajo del QR.
-- Líder que perdió el panel: volver a entrar con el PIN; el admin puede controlar cualquier iglesia desde `/admin`.
+- Líder que perdió el panel: volver a entrar con el PIN desde otro celular (la sesión dura 12 h). El admin no puede manejar iglesias: conviene que cada líder tenga su PIN a mano.
 - Respuesta inapropiada en pantalla: **Ocultar** desde el panel (antes de construir el muro desaparece de la TV; después, el muro queda como está).
 
 ## 4. Después

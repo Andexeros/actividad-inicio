@@ -82,7 +82,7 @@ export function Admin() {
         ) : pestana === "vivo" ? (
           <EnVivo datos={datos} />
         ) : pestana === "respuestas" ? (
-          <ListaRespuestas datos={datos} onCambio={recargar} />
+          <ListaRespuestas datos={datos} />
         ) : pestana === "combinado" ? (
           <Combinado datos={datos} />
         ) : (

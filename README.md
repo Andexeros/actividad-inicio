@@ -37,7 +37,7 @@ Stack: Next.js 16 (App Router, TS) · Tailwind 4 · Supabase (Postgres + Realtim
 
 ## Panel del líder (`/[iglesia]/host`)
 
-Se entra con el PIN de la iglesia (`iglesias.host_pin`, o `HOST_PIN` si no tiene). La sesión dura 12 h; si se cambia el PIN, se cierran las sesiones abiertas. El admin (`ADMIN_PIN`) también puede usar el panel de cualquier iglesia.
+Se entra con el PIN de la iglesia (`iglesias.host_pin`, o `HOST_PIN` si no tiene). La sesión dura 12 h; si se cambia el PIN, se cierran las sesiones abiertas. Cada iglesia avanza a su ritmo: solo su líder puede cambiar fases, moderar y reiniciar (el admin solo mira).
 
 Recorrido apretando el botón principal:
 
@@ -62,10 +62,10 @@ Recorrido apretando el botón principal:
 
 ## Admin (`/admin`)
 
-Se entra con `ADMIN_PIN` (sesión de 12 h). Cuatro pestañas:
+Se entra con `ADMIN_PIN` (sesión de 12 h). Es **solo para mirar**: no cambia fases, no oculta respuestas ni reinicia (eso lo hace el líder de cada iglesia). Pestañas:
 
-- **En vivo:** las iglesias lado a lado (en celular, una por vez con pestañas). Cada una con el mismo control que el líder: fase, botones, respuestas en vivo con ocultar/mostrar y reinicio, más links a su TV y su celular.
-- **Respuestas:** todas las de las sesiones actuales, con filtros por iglesia, fase, pregunta y visibilidad, búsqueda de texto (sin importar mayúsculas ni tildes) y ocultar/mostrar.
+- **En vivo:** las iglesias lado a lado (en celular, una por vez con pestañas): fase, pregunta actual, si está recibiendo respuestas, cantidades y respuestas en vivo (las ocultas aparecen tachadas). Links a la TV y al celular de cada una.
+- **Respuestas:** todas las de las sesiones actuales, con filtros por iglesia, fase, pregunta y visibilidad, y búsqueda de texto (sin importar mayúsculas ni tildes).
 - **Exportar CSV:** desde Respuestas, todo o por iglesia (`/admin/exportar` y `/admin/exportar?iglesia=slug`). Incluye también actividades anteriores (reinicios), con la fecha de cada sesión. Separado por `;` y con BOM para que Excel en español lo abra bien.
 - **Combinado:** nube de respuestas y ranking de las palabras más repetidas juntando todas las iglesias (solo visibles), por fase.
 - **Iglesias:** crear y editar nombre, slug y PIN propio. Cambiar el slug cambia la dirección y el QR de esa iglesia. No se pueden usar slugs reservados (`admin`, `api`, `tv`, `host`).

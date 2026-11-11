@@ -1,7 +1,7 @@
 "use server";
 
 /**
- * Acciones de control (host y admin). Todas validan el PIN vía cookie antes de
+ * Acciones de control del líder de cada iglesia. Todas validan el PIN vía cookie antes de
  * tocar la base con service role.
  */
 
@@ -50,7 +50,7 @@ export async function logoutHost(iglesiaId: string): Promise<void> {
 
 /**
  * Ejecuta un botón de la máquina de estados. `versionVista` evita que dos líderes
- * (o host + admin) apliquen la misma acción dos veces: si la sesión cambió, se rechaza.
+ * (dos celulares del mismo líder, por ejemplo) apliquen la misma acción dos veces: si la sesión cambió, se rechaza.
  */
 export async function ejecutarAccion(
   iglesiaId: string,

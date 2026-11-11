@@ -8,7 +8,7 @@ import { getServiceSupabase } from "@/lib/supabase/server";
  * Autenticación por PIN con cookies firmadas (HMAC con SESSION_SECRET).
  * - Host: una cookie por iglesia. Incluye un hash corto del PIN vigente, así que
  *   cambiar el PIN de una iglesia cierra las sesiones abiertas de sus líderes.
- * - Admin: una cookie; también puede controlar cualquier iglesia.
+ * - Admin: una cookie; solo mira (no controla ninguna iglesia).
  */
 
 const DURACION_S = 60 * 60 * 12; // 12 h
@@ -123,9 +123,11 @@ export async function esAdmin(): Promise<boolean> {
   return Boolean(token && token.r === "admin" && vigente && token.p === huellaPin(vigente));
 }
 
-/** ¿Puede controlar esta iglesia? (líder con su PIN vigente, o admin) */
+/**
+ * ¿Puede controlar esta iglesia? Solo su líder, con el PIN vigente.
+ * Cada iglesia maneja sus tiempos; el admin solo mira.
+ */
 export async function puedeControlar(iglesiaId: string): Promise<boolean> {
-  if (await esAdmin()) return true;
   const token = leerToken((await cookies()).get(cookieHost(iglesiaId))?.value);
   if (!token || token.r !== "host" || token.i !== iglesiaId) return false;
   const vigente = await pinDeIglesia(iglesiaId);
