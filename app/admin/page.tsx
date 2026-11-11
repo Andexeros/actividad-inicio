@@ -1,3 +1,4 @@
+import { Cargando } from "@/components/cargando";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
@@ -17,7 +18,7 @@ async function Contenido() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<main className="min-h-dvh flex-1 bg-background" />}>
+    <Suspense fallback={<Cargando />}>
       <Contenido />
     </Suspense>
   );

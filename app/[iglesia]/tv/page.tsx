@@ -1,6 +1,13 @@
+import { Cargando } from "@/components/cargando";
 import { Suspense } from "react";
 import { cargarIglesiaYSesion } from "@/lib/iglesias";
+import type { Metadata } from "next";
 import { Tv } from "./tv";
+
+export const metadata: Metadata = {
+  title: "TV · El Muro",
+  robots: { index: false, follow: false },
+};
 
 async function Contenido({ params }: { params: Promise<{ iglesia: string }> }) {
   const { iglesia: slug } = await params;
@@ -10,7 +17,7 @@ async function Contenido({ params }: { params: Promise<{ iglesia: string }> }) {
 
 export default function Page(props: PageProps<"/[iglesia]/tv">) {
   return (
-    <Suspense fallback={<main className="fondo-calido min-h-dvh flex-1" />}>
+    <Suspense fallback={<Cargando />}>
       <Contenido params={props.params} />
     </Suspense>
   );

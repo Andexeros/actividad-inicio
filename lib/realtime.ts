@@ -35,6 +35,9 @@ export function useSesionActiva(iglesiaId: string, inicial: Sesion | null) {
 
   useEffect(() => {
     const supabase = getBrowserSupabase();
+    // Al desmontar, este canal deja de opinar sobre la conexión: su "CLOSED" no debe
+    // pisar el "SUBSCRIBED" del canal nuevo (pasa al reconectar o al remontar)
+    let vigente = true;
     const canal = supabase
       .channel(idCanal(`sesion:${iglesiaId}`))
       .on(
@@ -52,6 +55,7 @@ export function useSesionActiva(iglesiaId: string, inicial: Sesion | null) {
         },
       )
       .subscribe((estado) => {
+        if (!vigente) return;
         if (estado === "SUBSCRIBED") {
           setConexion("conectado");
           // Releer al quedar suscripto: cubre lo que llegó entre la carga inicial y la
@@ -67,6 +71,7 @@ export function useSesionActiva(iglesiaId: string, inicial: Sesion | null) {
     };
     document.addEventListener("visibilitychange", alVolver);
     return () => {
+      vigente = false;
       document.removeEventListener("visibilitychange", alVolver);
       void supabase.removeChannel(canal);
     };

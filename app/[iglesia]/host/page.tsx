@@ -1,3 +1,4 @@
+import { Cargando } from "@/components/cargando";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { puedeControlar } from "@/lib/auth";
@@ -21,7 +22,7 @@ async function Contenido({ params }: { params: Promise<{ iglesia: string }> }) {
 
 export default function Page(props: PageProps<"/[iglesia]/host">) {
   return (
-    <Suspense fallback={<main className="min-h-dvh flex-1 bg-background" />}>
+    <Suspense fallback={<Cargando />}>
       <Contenido params={props.params} />
     </Suspense>
   );

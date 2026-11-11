@@ -39,6 +39,26 @@ export function ControlesTv() {
     };
   }, []);
 
+  // Que la pantalla no se apague ni se bloquee durante la actividad (Screen Wake Lock).
+  // El navegador lo suelta al cambiar de pestaña: se vuelve a pedir al volver.
+  useEffect(() => {
+    let bloqueo: WakeLockSentinel | null = null;
+    async function pedir() {
+      if (document.visibilityState !== "visible" || !("wakeLock" in navigator)) return;
+      try {
+        bloqueo = await navigator.wakeLock.request("screen");
+      } catch {
+        // sin permiso o no soportado: la TV sigue funcionando igual
+      }
+    }
+    void pedir();
+    document.addEventListener("visibilitychange", pedir);
+    return () => {
+      document.removeEventListener("visibilitychange", pedir);
+      void bloqueo?.release().catch(() => {});
+    };
+  }, []);
+
   useEffect(() => {
     document.body.style.cursor = visible ? "" : "none";
     return () => {

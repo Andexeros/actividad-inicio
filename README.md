@@ -30,6 +30,11 @@ Stack: Next.js 16 (App Router, TS) · Tailwind 4 · Supabase (Postgres + Realtim
    - `SESSION_SECRET` → string al azar de 16+ caracteres (firma las cookies de host/admin). Por ejemplo: `node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"`.
 5. `npm run dev` y abrí http://localhost:3000.
 
+## Antes de la actividad
+
+- **`CHECKLIST.md`**: deploy en Vercel, prueba con celulares reales y lista para el día del evento.
+- **`npm run chequeo`**: revisa variables, migraciones, que cada iglesia esté en Inicio y la seguridad de la clave pública. Solo lee, no cambia nada.
+
 ## Panel del líder (`/[iglesia]/host`)
 
 Se entra con el PIN de la iglesia (`iglesias.host_pin`, o `HOST_PIN` si no tiene). La sesión dura 12 h; si se cambia el PIN, se cierran las sesiones abiertas. El admin (`ADMIN_PIN`) también puede usar el panel de cualquier iglesia.

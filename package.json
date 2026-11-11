@@ -10,7 +10,8 @@
     "probar:aislamiento": "node --env-file=.env.local scripts/probar-aislamiento.mjs",
     "fase": "node --env-file=.env.local scripts/fase.mjs",
     "sonidos": "node scripts/generar-sonidos.mjs",
-    "migrar": "node --env-file=.env.local scripts/migrar.mjs"
+    "migrar": "node --env-file=.env.local scripts/migrar.mjs",
+    "chequeo": "node --env-file=.env.local scripts/chequeo.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

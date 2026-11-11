@@ -1,3 +1,4 @@
+import { Cargando } from "@/components/cargando";
 import { Suspense } from "react";
 import { cargarIglesiaYSesion } from "@/lib/iglesias";
 import { Celular } from "./celular";
@@ -10,7 +11,7 @@ async function Contenido({ params }: { params: Promise<{ iglesia: string }> }) {
 
 export default function Page(props: PageProps<"/[iglesia]">) {
   return (
-    <Suspense fallback={<main className="fondo-calido min-h-dvh flex-1" />}>
+    <Suspense fallback={<Cargando />}>
       <Contenido params={props.params} />
     </Suspense>
   );
