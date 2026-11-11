@@ -55,6 +55,17 @@ Recorrido apretando el botón principal:
 - Lista de respuestas en vivo (incluidas las que ocultó el filtro, marcadas "filtro automático") con Ocultar/Mostrar.
 - "Reiniciar actividad" (con confirmación) crea una sesión nueva en Inicio; las respuestas viejas quedan en la base.
 
+## TV (`/[iglesia]/tv`)
+
+- Pensada para 16:9 en pantalla completa. Arriba a la izquierda: **Pantalla completa** y **Activar sonido** (los navegadores no dejan sonar audio hasta que alguien hace clic en la página; hacelo una vez al abrir la TV). Los botones y el cursor se esconden solos.
+- **Inicio:** título, iglesia, QR grande con la URL corta y cuántos celulares están conectados (Supabase Presence).
+- **Fase 1:** pregunta grande, contador animado de respuestas y QR en la esquina.
+- **Construir el muro:** los ladrillos caen de a uno (`config/actividad.ts → muro.msEntreLadrillos`, 150 ms), con su palabra, física (Matter.js) y sonido. Siempre hay al menos `muro.minimoLadrillos` (60) ladrillos y las filas se completan con ladrillos sin texto. Al terminar aparece la frase de reflexión.
+- **Recarga:** si la TV se abre o recarga con el muro ya construido, aparece completo y quieto (no se repite la animación). Solo se anima si la TV vio en vivo el paso a "Construir el muro". Si cambia el tamaño de la ventana durante la construcción, se completa al instante.
+- Rendimiento medido: 168 ladrillos, 0,14 ms promedio por cuadro (física + dibujo); cada ladrillo se dibuja una sola vez como imagen.
+- Sonidos: `public/sounds/*.wav`, generados por síntesis propia con `npm run sonidos` (sin licencias de terceros).
+- `NEXT_PUBLIC_SITE_URL`: la URL que va en el QR (en producción, `https://actividadbiblica.vercel.app`).
+
 ## Probar sin panel (consola)
 
 También se puede cambiar la fase por consola:

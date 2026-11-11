@@ -1,0 +1,93 @@
+"use client";
+
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { precargarSonidos, silenciar } from "@/lib/sonidos";
+
+function suscribirFullscreen(cb: () => void) {
+  document.addEventListener("fullscreenchange", cb);
+  return () => document.removeEventListener("fullscreenchange", cb);
+}
+
+/**
+ * Botones de pantalla completa y sonido (abajo a la izquierda). Se esconden solos,
+ * junto con el cursor, después de 3 s sin mover el mouse.
+ */
+export function ControlesTv() {
+  const [visible, setVisible] = useState(true);
+  const [sonido, setSonido] = useState(false);
+  const pantallaCompleta = useSyncExternalStore(
+    suscribirFullscreen,
+    () => Boolean(document.fullscreenElement),
+    () => false,
+  );
+
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const mostrar = () => {
+      setVisible(true);
+      clearTimeout(t);
+      t = setTimeout(() => setVisible(false), 3000);
+    };
+    mostrar();
+    window.addEventListener("mousemove", mostrar);
+    window.addEventListener("keydown", mostrar);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("mousemove", mostrar);
+      window.removeEventListener("keydown", mostrar);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.body.style.cursor = visible ? "" : "none";
+    return () => {
+      document.body.style.cursor = "";
+    };
+  }, [visible]);
+
+  async function activarSonido(activo: boolean) {
+    await precargarSonidos();
+    await silenciar(!activo);
+    setSonido(activo);
+  }
+
+  async function alternarPantalla() {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else {
+      await document.documentElement.requestFullscreen().catch(() => {});
+      // el clic sirve también para habilitar el audio
+      if (!sonido) await activarSonido(true);
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      {(visible || !sonido) && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed left-4 top-4 z-50 flex gap-2"
+        >
+          <button
+            type="button"
+            onClick={() => void alternarPantalla()}
+            className="rounded-xl bg-black/60 px-4 py-2 text-sm text-foreground/80 backdrop-blur hover:bg-black/80"
+          >
+            {pantallaCompleta ? "Salir de pantalla completa" : "⛶ Pantalla completa"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void activarSonido(!sonido)}
+            className={`rounded-xl px-4 py-2 text-sm backdrop-blur ${
+              sonido ? "bg-black/60 text-foreground/80 hover:bg-black/80" : "animate-pulse bg-ladrillo-500 text-ladrillo-50"
+            }`}
+          >
+            {sonido ? "🔊 Sonido" : "🔇 Activar sonido"}
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

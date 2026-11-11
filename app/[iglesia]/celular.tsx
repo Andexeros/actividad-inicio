@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { actividad } from "@/config/actividad";
 import { guardarEnviadasLocal, idDispositivo, useEnviadasLocal } from "@/lib/dispositivo";
 import { entradaActual, limpiarTexto } from "@/lib/fases";
+import { usePresencia } from "@/lib/presencia";
 import { useSesionActiva } from "@/lib/realtime";
 import type { Iglesia, Sesion } from "@/lib/types";
 import { enviarRespuesta } from "./actions";
@@ -16,6 +17,7 @@ type Props = { iglesia: Iglesia; sesionInicial: Sesion | null };
 
 export function Celular({ iglesia, sesionInicial }: Props) {
   const { sesion, conexion } = useSesionActiva(iglesia.id, sesionInicial);
+  usePresencia(iglesia.id, idDispositivo);
   const entrada = sesion ? entradaActual(sesion) : null;
   const reducir = useReducedMotion() ?? false;
 
