@@ -23,7 +23,7 @@ Stack: Next.js 16 (App Router, TS) · Tailwind 4 · Supabase (Postgres + Realtim
    - `supabase/migrations/20261110000002_iglesias_iniciales.sql`
    - `supabase/migrations/20261110000003_funciones_host.sql`
 
-   (Con la CLI de Supabase: `supabase link` y `supabase db push`.)
+   O desde la compu, con `npm run migrar`: aplica en orden las que falten y anota cuáles corrió (tabla `_migraciones`), así que se puede correr de nuevo sin riesgo. Usa `POSTGRES_URL_NON_POOLING` de `.env.local` y verifica la conexión con el certificado de Supabase (`supabase/prod-ca-2021.crt`, indicado en `SUPABASE_CA_CERT`).
 4. **Variables de entorno:** copiá `.env.example` a `.env.local` y completá:
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` → *Project Settings → API*.
    - `ADMIN_PIN`, `HOST_PIN` → PINs numéricos. Cada iglesia puede tener su propio PIN en `iglesias.host_pin`; si está vacío se usa `HOST_PIN`.

@@ -5,6 +5,7 @@
       "name": "dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
+      "cwd": "E:\\Andextech\\actividad de inicio",
       "port": 3000
     }
   ]

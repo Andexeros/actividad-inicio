@@ -35,7 +35,6 @@ export function useSesionActiva(iglesiaId: string, inicial: Sesion | null) {
 
   useEffect(() => {
     const supabase = getBrowserSupabase();
-    let yaConectado = false;
     const canal = supabase
       .channel(idCanal(`sesion:${iglesiaId}`))
       .on(
@@ -55,9 +54,9 @@ export function useSesionActiva(iglesiaId: string, inicial: Sesion | null) {
       .subscribe((estado) => {
         if (estado === "SUBSCRIBED") {
           setConexion("conectado");
-          // Al (re)conectar puede haberse perdido algún cambio
-          if (yaConectado) void recargar();
-          yaConectado = true;
+          // Releer al quedar suscripto: cubre lo que llegó entre la carga inicial y la
+          // suscripción (y lo perdido en una reconexión o con Realtime recién arrancando)
+          void recargar();
         } else if (estado === "CHANNEL_ERROR" || estado === "TIMED_OUT" || estado === "CLOSED") {
           setConexion("desconectado");
         }
@@ -112,7 +111,6 @@ export function useRespuestas(iglesiaId: string, sesionId: string | null, rev: n
   useEffect(() => {
     if (!sesionId) return;
     const supabase = getBrowserSupabase();
-    let yaConectado = false;
     const canal = supabase
       .channel(idCanal(`respuestas:${iglesiaId}`))
       .on(
@@ -131,8 +129,9 @@ export function useRespuestas(iglesiaId: string, sesionId: string | null, rev: n
       )
       .subscribe((estado) => {
         if (estado === "SUBSCRIBED") {
-          if (yaConectado) void recargar();
-          yaConectado = true;
+          // Releer al quedar suscripto: cubre lo que llegó entre la carga inicial y la
+          // suscripción (y lo perdido en una reconexión o con Realtime recién arrancando)
+          void recargar();
         }
       });
     return () => {
