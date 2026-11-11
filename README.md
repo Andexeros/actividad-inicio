@@ -55,6 +55,16 @@ Recorrido apretando el botón principal:
 - Lista de respuestas en vivo (incluidas las que ocultó el filtro, marcadas "filtro automático") con Ocultar/Mostrar.
 - "Reiniciar actividad" (con confirmación) crea una sesión nueva en Inicio; las respuestas viejas quedan en la base.
 
+## Admin (`/admin`)
+
+Se entra con `ADMIN_PIN` (sesión de 12 h). Cuatro pestañas:
+
+- **En vivo:** las iglesias lado a lado (en celular, una por vez con pestañas). Cada una con el mismo control que el líder: fase, botones, respuestas en vivo con ocultar/mostrar y reinicio, más links a su TV y su celular.
+- **Respuestas:** todas las de las sesiones actuales, con filtros por iglesia, fase, pregunta y visibilidad, búsqueda de texto (sin importar mayúsculas ni tildes) y ocultar/mostrar.
+- **Exportar CSV:** desde Respuestas, todo o por iglesia (`/admin/exportar` y `/admin/exportar?iglesia=slug`). Incluye también actividades anteriores (reinicios), con la fecha de cada sesión. Separado por `;` y con BOM para que Excel en español lo abra bien.
+- **Combinado:** nube de respuestas y ranking de las palabras más repetidas juntando todas las iglesias (solo visibles), por fase.
+- **Iglesias:** crear y editar nombre, slug y PIN propio. Cambiar el slug cambia la dirección y el QR de esa iglesia. No se pueden usar slugs reservados (`admin`, `api`, `tv`, `host`).
+
 ## TV (`/[iglesia]/tv`)
 
 - Pensada para 16:9 en pantalla completa. Abajo al centro: **Pantalla completa** y **Activar sonido** (los navegadores no dejan sonar audio hasta que alguien hace clic en la página; hacelo una vez al abrir la TV). Los botones y el cursor se esconden solos.

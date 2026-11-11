@@ -98,3 +98,26 @@ export function ubicarNube(
   });
   return res;
 }
+
+/** Palabras que no aportan al ranking. */
+const VACIAS = new Set(
+  (
+    "a al algo ante antes como con contra cual cuando de del desde donde e el ella ellas ellos en entre era es esa ese eso esta este esto estos estas fue ha hay la las le les lo los mas me mi mis muy ni no nos o otro otra otros otras para pero por porque que se si sin sobre su sus tambien te ti tu tus un una uno unos unas y ya yo hacer ser estar tener"
+  ).split(" "),
+);
+
+/** Ranking de palabras sueltas (sin tildes ni mayúsculas, sin palabras vacías). */
+export function contarPalabras(textos: string[]): Conteo[] {
+  const conteo = new Map<string, number>();
+  for (const t of textos) {
+    const vistas = new Set<string>(); // una respuesta suma 1 por palabra aunque la repita
+    for (const p of normalizarRespuesta(t).split(" ")) {
+      if (p.length < 3 || VACIAS.has(p) || vistas.has(p)) continue;
+      vistas.add(p);
+      conteo.set(p, (conteo.get(p) ?? 0) + 1);
+    }
+  }
+  return [...conteo]
+    .map(([texto, n]) => ({ texto, n }))
+    .sort((a, b) => b.n - a.n || a.texto.localeCompare(b.texto, "es"));
+}
