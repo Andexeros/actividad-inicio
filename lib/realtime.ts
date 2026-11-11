@@ -82,6 +82,8 @@ export function useSesionActiva(iglesiaId: string, inicial: Sesion | null) {
  */
 export function useRespuestas(iglesiaId: string, sesionId: string | null, rev: number) {
   const [respuestas, setRespuestas] = useState<Respuesta[]>([]);
+  /** Sesión cuya carga inicial ya terminó (para distinguir "0 respuestas" de "todavía cargando"). */
+  const [cargadasDe, setCargadasDe] = useState<string | null>(null);
   const sesionRef = useRef(sesionId);
   useEffect(() => {
     sesionRef.current = sesionId;
@@ -96,7 +98,10 @@ export function useRespuestas(iglesiaId: string, sesionId: string | null, rev: n
       .order("created_at", { ascending: true })
       .limit(2000)
       .returns<Respuesta[]>();
-    if (!error && sesionRef.current === sesionId) setRespuestas(data ?? []);
+    if (!error && sesionRef.current === sesionId) {
+      setRespuestas(data ?? []);
+      setCargadasDe(sesionId);
+    }
   }, [sesionId]);
 
   // Carga inicial y cada vez que cambia rev
@@ -137,5 +142,5 @@ export function useRespuestas(iglesiaId: string, sesionId: string | null, rev: n
 
   // Al cambiar de sesión (reinicio) no mostramos las respuestas de la anterior
   const actuales = sesionId ? respuestas.filter((r) => r.sesion_id === sesionId) : [];
-  return { respuestas: actuales, recargar };
+  return { respuestas: actuales, cargadas: sesionId !== null && cargadasDe === sesionId, recargar };
 }

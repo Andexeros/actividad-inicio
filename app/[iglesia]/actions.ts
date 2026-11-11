@@ -24,6 +24,28 @@ type Envio = {
   dispositivo: string;
 };
 
+/**
+ * Si las respuestas visibles de fase 2 llegaron a `respuestasParaDerribar`, pasa a "derrumbe".
+ * El update es condicional (fase = 'fase2'): si dos celulares llegan juntos, cambia una sola vez.
+ */
+async function derribarSiLlego(sesionId: string) {
+  const db = getServiceSupabase();
+  const { count, error } = await db
+    .from("respuestas")
+    .select("id", { count: "exact", head: true })
+    .eq("sesion_id", sesionId)
+    .eq("fase", 2)
+    .eq("visible", true);
+  if (error || (count ?? 0) < actividad.fase2.respuestasParaDerribar) return;
+  const { data: actual } = await db.from("sesiones").select("version").eq("id", sesionId).single<{ version: number }>();
+  if (!actual) return;
+  await db
+    .from("sesiones")
+    .update({ fase: "derrumbe", entrada_abierta: false, version: actual.version + 1 })
+    .eq("id", sesionId)
+    .eq("fase", "fase2");
+}
+
 function hashDispositivo(id: string): string {
   return createHash("sha256")
     .update(`${process.env.SESSION_SECRET ?? ""}:${id}`)
@@ -116,6 +138,9 @@ async function procesarEnvio(envio: Envio): Promise<ResultadoEnvio> {
 
   // Las filtradas no llegan por Realtime (la anon key no las ve): avisamos al panel del líder
   if (filtrada) await db.rpc("tocar_sesion", { p_sesion: sesion.id });
+
+  // Fase 2: al llegar al 100% de fuerza, el muro se derrumba solo
+  if (entrada.fase === 2 && !filtrada) await derribarSiLlego(sesion.id);
 
   // Aunque se haya filtrado, respondemos OK: no le damos pistas a quien prueba el filtro.
   return { ok: true, restantes: maxPorPregunta - enviadas - 1 };

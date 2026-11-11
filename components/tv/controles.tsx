@@ -68,7 +68,7 @@ export function ControlesTv() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed left-4 top-4 z-50 flex gap-2"
+          className="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2"
         >
           <button
             type="button"

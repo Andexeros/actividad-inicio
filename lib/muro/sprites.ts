@@ -118,6 +118,60 @@ export function crearSpriteLadrillo(opts: {
   return { canvas: c, w, h };
 }
 
+/**
+ * Proyectil de fase 2: "píldora" dorada y luminosa con la respuesta escrita.
+ * El sprite incluye el halo (margen alrededor de la píldora).
+ */
+export function crearSpriteProyectil(opts: {
+  texto: string;
+  alto: number; // alto de la píldora (px CSS)
+  dpr: number;
+  familia: string;
+}): Sprite {
+  const { dpr, familia } = opts;
+  const texto = opts.texto.toUpperCase();
+  const h = Math.max(18, opts.alto);
+  const medir = lienzo(4, 4).getContext("2d") as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+  const tam = h * 0.62;
+  medir.font = `${tam}px ${familia}`;
+  const anchoTexto = medir.measureText(texto).width;
+  const w = Math.max(h * 1.8, anchoTexto + h * 0.9);
+  const margen = h * 0.55;
+  const W = w + margen * 2;
+  const H = h + margen * 2;
+  const c = lienzo(Math.ceil(W * dpr), Math.ceil(H * dpr));
+  const ctx = c.getContext("2d") as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+  ctx.scale(dpr, dpr);
+
+  // Halo
+  const halo = ctx.createRadialGradient(W / 2, H / 2, h * 0.3, W / 2, H / 2, W / 2);
+  halo.addColorStop(0, "rgb(255 200 110 / 0.55)");
+  halo.addColorStop(1, "rgb(255 150 60 / 0)");
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, W, H);
+
+  // Píldora
+  const g = ctx.createLinearGradient(0, margen, 0, margen + h);
+  g.addColorStop(0, "#fff3d1");
+  g.addColorStop(0.5, "#ffc46b");
+  g.addColorStop(1, "#e9873a");
+  ctx.beginPath();
+  ctx.roundRect(margen, margen, w, h, h / 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, h * 0.05);
+  ctx.strokeStyle = "rgb(255 255 255 / 0.7)";
+  ctx.stroke();
+
+  ctx.font = `${tam}px ${familia}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#3a1606";
+  ctx.fillText(texto, W / 2, H / 2 + tam * 0.05);
+
+  return { canvas: c, w: W, h: H };
+}
+
 /** Familia tipográfica real que cargó next/font para la display (Bebas Neue). */
 export function familiaDisplay(): string {
   if (typeof document === "undefined") return "sans-serif";

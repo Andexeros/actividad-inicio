@@ -57,11 +57,16 @@ Recorrido apretando el botón principal:
 
 ## TV (`/[iglesia]/tv`)
 
-- Pensada para 16:9 en pantalla completa. Arriba a la izquierda: **Pantalla completa** y **Activar sonido** (los navegadores no dejan sonar audio hasta que alguien hace clic en la página; hacelo una vez al abrir la TV). Los botones y el cursor se esconden solos.
+- Pensada para 16:9 en pantalla completa. Abajo al centro: **Pantalla completa** y **Activar sonido** (los navegadores no dejan sonar audio hasta que alguien hace clic en la página; hacelo una vez al abrir la TV). Los botones y el cursor se esconden solos.
 - **Inicio:** título, iglesia, QR grande con la URL corta y cuántos celulares están conectados (Supabase Presence).
 - **Fase 1:** pregunta grande, contador animado de respuestas y QR en la esquina.
 - **Construir el muro:** los ladrillos caen de a uno (`config/actividad.ts → muro.msEntreLadrillos`, 150 ms), con su palabra, física (Matter.js) y sonido. Siempre hay al menos `muro.minimoLadrillos` (60) ladrillos y las filas se completan con ladrillos sin texto. Al terminar aparece la frase de reflexión.
 - **Recarga:** si la TV se abre o recarga con el muro ya construido, aparece completo y quieto (no se repite la animación). Solo se anima si la TV vio en vivo el paso a "Construir el muro". Si cambia el tamaño de la ventana durante la construcción, se completa al instante.
+- **Fase 2:** pregunta arriba, QR en la esquina y barra de **fuerza** (respuestas visibles de fase 2 ÷ `fase2.respuestasParaDerribar`, 30 por defecto). Cada respuesta nueva es un proyectil dorado con la palabra que viene "desde el público", pega en el muro y tira 1 o 2 ladrillos con física (caen delante del muro y quedan como escombros). Si llegan muchas juntas se encolan y se lanzan seguido.
+- **Qué ladrillos caen** es determinístico (`lib/muro/golpes.ts`): el golpe N siempre tira los mismos, solo de los que no tienen nada encima (nunca quedan ladrillos flotando), con preferencia por el centro. Al recargar en fase 2, los golpes que ya pasaron aparecen como escombros quietos, sin volver a lanzar proyectiles.
+- **Derrumbe:** al llegar al 100% el servidor pasa solo a "derrumbe" (o el líder aprieta *Derribar*). Todos los ladrillos salen despedidos hacia afuera, sacudida de cámara, destello y sonido fuerte; aparece la luz cálida y, a los ~2 s, el versículo (`fase2.versiculo`). Si la TV se abre ya derrumbada, se ven los escombros quietos y el versículo directo.
+- **Final:** nube de palabras de la fase 2 (respuestas iguales se agrupan sin importar mayúsculas, tildes ni signos). Las respuestas ocultas por el líder no aparecen.
+- Rendimiento medido: 21 golpes seguidos sobre 68 ladrillos, 0,2 ms promedio por cuadro; derrumbe de 162 ladrillos, 0,85 ms promedio y 8,4 ms el peor cuadro (el límite para 60 fps es 16,7 ms).
 - Rendimiento medido: 168 ladrillos, 0,14 ms promedio por cuadro (física + dibujo); cada ladrillo se dibuja una sola vez como imagen.
 - Sonidos: `public/sounds/*.wav`, generados por síntesis propia con `npm run sonidos` (sin licencias de terceros).
 - `NEXT_PUBLIC_SITE_URL`: la URL que va en el QR (en producción, `https://actividadbiblica.vercel.app`).

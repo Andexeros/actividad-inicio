@@ -72,7 +72,7 @@ export function disenarMuro(opts: {
   const necesarios = Math.max(textos.length, minimo, 1);
 
   const anchoUtil = ancho * 0.9;
-  const altoUtil = alto * (opts.altoMax ?? 0.74);
+  const altoUtil = alto * (opts.altoMax ?? 0.6); // deja lugar arriba para pregunta, barra y frase
   const piso = alto - alto * 0.035;
 
   // La mayor cantidad de columnas posible que todavía entre: elegimos el ladrillo más grande
