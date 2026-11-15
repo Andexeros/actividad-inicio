@@ -41,12 +41,24 @@ export function ListaRespuestas({ datos, onCambio }: { datos: DatosAdmin; onCamb
   }
 
   const nombres = useMemo(() => new Map(datos.iglesias.map((i) => [i.id, i.nombre])), [datos.iglesias]);
+  // Iglesias divididas en grupos ("Central 1", "Central 2"…): opción para verlas juntas
+  const grupos = useMemo(() => {
+    const porBase = new Map<string, string[]>();
+    for (const i of datos.iglesias) {
+      const base = i.nombre.replace(/s*d+$/, "").trim();
+      if (base !== i.nombre) porBase.set(base, [...(porBase.get(base) ?? []), i.id]);
+    }
+    return [...porBase].filter(([, ids]) => ids.length > 1);
+  }, [datos.iglesias]);
+  const idsGrupo = iglesia.startsWith("grupo:") ? new Set(grupos.find(([b]) => `grupo:${b}` === iglesia)?.[1] ?? []) : null;
   const q = normalizarRespuesta(busqueda);
 
   const lista = datos.respuestas.filter((r) => {
     if (borradas.has(r.id)) return false;
     const visible = r.visible;
-    if (iglesia !== "todas" && r.iglesia_id !== iglesia) return false;
+    if (idsGrupo) {
+      if (!idsGrupo.has(r.iglesia_id)) return false;
+    } else if (iglesia !== "todas" && r.iglesia_id !== iglesia) return false;
     if (fase !== "todas" && String(r.fase) !== fase) return false;
     if (fase === "1" && pregunta !== "todas" && String(r.pregunta) !== pregunta) return false;
     if (visibilidad === "visibles" && !visible) return false;
@@ -69,6 +81,11 @@ export function ListaRespuestas({ datos, onCambio }: { datos: DatosAdmin; onCamb
         />
         <select value={iglesia} onChange={(e) => setIglesia(e.target.value)} className={selectCls} aria-label="Iglesia">
           <option value="todas">Todas las iglesias</option>
+          {grupos.map(([base]) => (
+            <option key={base} value={`grupo:${base}`}>
+              {base} (todos)
+            </option>
+          ))}
           {datos.iglesias.map((i) => (
             <option key={i.id} value={i.id}>
               {i.nombre}

@@ -13,7 +13,7 @@ Stack: Next.js 16 (App Router, TS) · Tailwind 4 · Supabase (Postgres + Realtim
 | `/isla/r` | Chicos (celular) | Responder. Es la dirección del QR |
 | `/admin` | Admin (PIN) | Mirar las iglesias en vivo, todas las respuestas, CSV |
 
-(Lo mismo con `central`, `alvear` o cualquier iglesia nueva. La vieja `/isla/tv` redirige a `/isla`.)
+Iglesias: `isla`, `alvear` y **Central en 3 grupos separados** (`central1`, `central2`, `central3`), cada uno con su TV, su QR, sus respuestas y su muro. Se suman más desde `/admin → Iglesias`. Links viejos: `/isla/tv` redirige a `/isla`, y `/central` (y `/central/r`) a `central1`.
 
 ## Cómo se usa
 
@@ -40,7 +40,7 @@ Cada iglesia es independiente: avanzar una no afecta a las otras. No hay PIN par
 Se entra con el PIN de admin (12 h): `ADMIN_PIN` si está cargado en Vercel, o **1234** por defecto (conviene cambiarlo cargando `ADMIN_PIN`). Mira las iglesias, no las maneja:
 
 - **En vivo:** las iglesias lado a lado (en celular, con pestañas): paso, pregunta, si recibe respuestas, cantidades y respuestas en vivo.
-- **Respuestas:** filtros por iglesia, fase, pregunta y visibilidad, búsqueda, y **Exportar CSV** (todo o por iglesia, incluye actividades anteriores; abre bien en Excel en español).
+- **Respuestas:** filtros por iglesia (incluye **"Central (todos)"** para ver los 3 grupos juntos), fase, pregunta y visibilidad, búsqueda, y **Exportar CSV** (todo o por iglesia, incluye actividades anteriores; abre bien en Excel en español).
 - **Borrar:** 🗑 en cada respuesta (pide confirmar), y **Empezar de cero** al final de Respuestas: borra para siempre todas las respuestas de una iglesia o de todas y deja la TV en Inicio con el muro vacío (hay que escribir BORRAR).
 - **Combinado:** nube y ranking de palabras de todas las iglesias, por fase.
 - **Iglesias:** crear y editar nombre y slug (cambiar el slug cambia la dirección y el QR).
