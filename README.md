@@ -8,7 +8,7 @@ Stack: Next.js 16 (App Router, TS) · Tailwind 4 · Supabase (Postgres + Realtim
 
 | Dirección | Quién | Qué |
 |---|---|---|
-| `/` | — | Lista de iglesias (lleva al celular de cada una) |
+| `/` | — | Lista de iglesias (lleva a la TV de cada una) |
 | `/isla` | Pantalla grande | **La TV**: muro, QR, animaciones y los botones **Avanzar / Retroceder** |
 | `/isla/r` | Chicos (celular) | Responder. Es la dirección del QR |
 | `/admin` | Admin (PIN) | Mirar las iglesias en vivo, todas las respuestas, CSV |
